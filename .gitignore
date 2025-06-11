@@ -46,3 +46,6 @@ options.json
 # Backup files
 *.bak
 *.backup
+
+# Virtual environments
+.venv
