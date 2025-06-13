@@ -70,16 +70,16 @@ def print_cell_voltages(voltages: list) -> None:
         print(f"   ⚠️  VAROVÁNÍ: Velký rozdíl napětí ({diff_v*1000:.0f}mV)")
 
 
-def read_bms_data() -> Dict[str, Any]:
+def read_bms_data(bms_config: BMSConfig) -> Dict[str, Any]:
     """Přečte a zparsuje data z BMS"""
     print("📤 Komunikace s BMS...")
     
     # Získání raw dat
     raw_response = request_device_info(
-        port=BMSConfig.PORT,
-        address=BMSConfig.BMS_ADDRESS,
-        baudrate=BMSConfig.BAUDRATE,
-        timeout=BMSConfig.TIMEOUT
+        port=bms_config.port,
+        address=bms_config.address,
+        baudrate=bms_config.baudrate,
+        timeout=bms_config.timeout
     )
     
     print("✅ Komunikace dokončena!")
@@ -103,19 +103,24 @@ def read_bms_data() -> Dict[str, Any]:
 
 def main() -> int:
     """Hlavní funkce"""
+    # Inicializace konfigurací
+    bms_config = BMSConfig()
+    mqtt_config = MQTTConfig()
+    app_config = AppConfig()
+    
     # Nastavení logování
     logging.basicConfig(
-        level=getattr(logging, AppConfig.LOG_LEVEL),
+        level=getattr(logging, app_config.LOG_LEVEL),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
     
     print("=" * 50)
     print("🔋 BMS Reader - Service 42 + MQTT")
     print("=" * 50)
-    print(f"📡 Port: {BMSConfig.PORT}")
-    print(f"📡 Adresa: 0x{BMSConfig.BMS_ADDRESS:02X}")
-    print(f"📡 MQTT: {MQTTConfig.BROKER_HOST}:{MQTTConfig.BROKER_PORT}")
-    print(f"🔄 Interval: {AppConfig.READ_INTERVAL}s")
+    print(f"📡 Port: {bms_config.port}")
+    print(f"📡 Adresa: 0x{bms_config.address:02X}")
+    print(f"📡 MQTT: {mqtt_config.host}:{mqtt_config.port}")
+    print(f"🔄 Interval: {app_config.read_interval}s")
     print()
     
     # Inicializace MQTT
@@ -148,7 +153,7 @@ def main() -> int:
             
             try:
                 # Čtení a parsování dat
-                data = read_bms_data()
+                data = read_bms_data(bms_config)
                 print("✅ Data úspěšně načtena!")
                 
                 # Zobrazení shrnutí
@@ -165,19 +170,19 @@ def main() -> int:
                 else:
                     print("❌ Chyba při odesílání na MQTT")
                 
-                print(f"\n⏰ Další čtení za {AppConfig.READ_INTERVAL}s...")
+                print(f"\n⏰ Další čtení za {app_config.read_interval}s...")
                 print("=" * 50)
                 
                 # Čekání do dalšího cyklu
-                time.sleep(AppConfig.READ_INTERVAL)
+                time.sleep(app_config.read_interval)
                 
             except KeyboardInterrupt:
                 print("\n⏹️  Přerušeno uživatelem")
                 break
             except Exception as e:
                 print(f"❌ Chyba v cyklu: {e}")
-                print(f"⏰ Pokus za {AppConfig.READ_INTERVAL}s...")
-                time.sleep(AppConfig.READ_INTERVAL)
+                print(f"⏰ Pokus za {app_config.read_interval}s...")
+                time.sleep(app_config.read_interval)
         
         return 0
         
@@ -185,7 +190,7 @@ def main() -> int:
         print(f"❌ Kritická chyba: {e}")
         print("\n🔧 Zkontrolujte:")
         print("   - Je BMS zapnutý?")
-        print("   - Je správný port v config.py?")
+        print("   - Je správný port v config.ini?")
         print("   - Je dostupný MQTT server?")
         return 1
     finally:

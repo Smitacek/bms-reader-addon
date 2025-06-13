@@ -17,28 +17,28 @@ Aplikace pro čtení dat z Daren BMS a odesílání na MQTT server (Home Assista
 
 ## ⚙️ Konfigurace
 
-### 1. Upravte `config.py`
+### 1. Upravte `config.ini`
 
-```python
-# BMS komunikace
-class BMSConfig:
-    PORT = "/dev/tty.usbserial-XXXXX"  # Váš USB port
-    BMS_ADDRESS = 0x01                 # Adresa BMS (obvykle 0x01)
-    BAUDRATE = 9600
-    TIMEOUT = 2.0
+```ini
+[BMS]
+port = /dev/tty.usbserial-XXXXX
+address = 1
+baudrate = 9600
+timeout = 2.0
 
-# MQTT/Home Assistant
-class MQTTConfig:
-    BROKER_HOST = "192.168.1.100"      # IP adresa Home Assistant
-    BROKER_PORT = 1883
-    USERNAME = "mqtt_user"             # MQTT uživatel
-    PASSWORD = "mqtt_password"         # MQTT heslo
-    DEVICE_ID = "bms_lifepo4_01"       # Jedinečné ID zařízení
+[MQTT]
+broker_host = 192.168.1.100
+broker_port = 1883
+username = mqtt_user
+password = mqtt_password
 
-# Aplikace
-class AppConfig:
-    READ_INTERVAL = 30                 # Interval čtení (sekundy)
-    LOG_LEVEL = "INFO"                 # DEBUG, INFO, WARNING, ERROR
+[DEVICE]
+device_id = bms_lifepo4_01
+device_name = BMS LiFePO4 Battery
+
+[APPLICATION]
+read_interval = 30
+log_level = INFO
 ```
 
 ### 2. Najděte USB port
@@ -73,6 +73,12 @@ uv sync
 ### Test konfigurace
 ```bash
 uv run test_mqtt.py
+```
+
+### Kopírování konfigurace
+```bash
+cp config.ini.example config.ini
+# Pak upravte config.ini dle vašeho prostředí
 ```
 
 ### Spuštění aplikace
@@ -141,9 +147,10 @@ sudo usermod -a -G dialout $USER
 
 ## 📝 Logy
 
-Program zapisuje detailní logy. Pro ladění změňte v `config.py`:
-```python
-LOG_LEVEL = "DEBUG"
+Program zapisuje detailní logy. Pro ladění změňte v `config.ini`:
+```ini
+[APPLICATION]
+log_level = DEBUG
 ```
 
 ## 🔧 Systemd služba (Linux)

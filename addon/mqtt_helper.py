@@ -19,10 +19,8 @@ class MQTTPublisher:
     """MQTT publisher pro Home Assistant"""
     
     def __init__(self):
-        self.mqtt_config = MQTTConfig()
-        self.app_config = AppConfig()
         self.client = mqtt.Client()
-        self.client.username_pw_set(self.mqtt_config.username, self.mqtt_config.password)
+        self.client.username_pw_set(MQTTConfig.USERNAME, MQTTConfig.PASSWORD)
         self.client.on_connect = self._on_connect
         self.client.on_disconnect = self._on_disconnect
         self.client.on_publish = self._on_publish
@@ -32,7 +30,7 @@ class MQTTPublisher:
         """Callback při připojení k MQTT"""
         if rc == 0:
             self.connected = True
-            logger.info(f"✅ Připojeno k MQTT broker {self.mqtt_config.host}:{self.mqtt_config.port}")
+            logger.info(f"✅ Připojeno k MQTT broker {MQTTConfig.BROKER_HOST}:{MQTTConfig.BROKER_PORT}")
         else:
             self.connected = False
             logger.error(f"❌ Chyba připojení k MQTT: {rc}")
@@ -49,8 +47,8 @@ class MQTTPublisher:
     def connect(self) -> bool:
         """Připojí se k MQTT brokeru"""
         try:
-            logger.info(f"📡 Připojování k MQTT {self.mqtt_config.host}:{self.mqtt_config.port}")
-            self.client.connect(self.mqtt_config.host, self.mqtt_config.port, 60)
+            logger.info(f"📡 Připojování k MQTT {MQTTConfig.BROKER_HOST}:{MQTTConfig.BROKER_PORT}")
+            self.client.connect(MQTTConfig.BROKER_HOST, MQTTConfig.BROKER_PORT, 60)
             self.client.loop_start()
             return True
         except Exception as e:
@@ -172,8 +170,8 @@ class MQTTPublisher:
         for sensor in sensors:
             config = {
                 "name": f"BMS {sensor['name']}",
-                "unique_id": f"{self.mqtt_config.DEVICE_ID}_{sensor['object_id']}",
-                "state_topic": self.mqtt_config.get_state_topic(sensor['object_id']),
+                "unique_id": f"{MQTTConfig.DEVICE_ID}_{sensor['object_id']}",
+                "state_topic": MQTTConfig.get_state_topic(sensor['object_id']),
                 "unit_of_measurement": sensor.get("unit"),
                 "device_class": sensor.get("device_class"),
                 "state_class": sensor.get("state_class"),
@@ -184,7 +182,7 @@ class MQTTPublisher:
             # Odstraň None hodnoty
             config = {k: v for k, v in config.items() if v is not None}
             
-            topic = self.mqtt_config.get_discovery_topic("sensor", sensor['object_id'])
+            topic = MQTTConfig.get_discovery_topic("sensor", sensor['object_id'])
             result = self.client.publish(topic, json.dumps(config), retain=True)
             
             if result.rc != mqtt.MQTT_ERR_SUCCESS:
@@ -232,7 +230,7 @@ class MQTTPublisher:
         success = True
         for key, value in mqtt_data.items():
             if value is not None:
-                topic = self.mqtt_config.get_state_topic(key)
+                topic = MQTTConfig.get_state_topic(key)
                 result = self.client.publish(topic, value)
                 
                 if result.rc != mqtt.MQTT_ERR_SUCCESS:

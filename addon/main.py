@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-BMS Reader - Jednorázové čtění bez MQTT
-Pro testování komunikace s BMS
+BMS Reader - Čtení a parsování dat z Daren BMS přes Service 42
+Podporuje odesílání dat na MQTT (Home Assistant)
 """
 
 import sys
+import time
+import logging
 from typing import Dict, Any
 
 from modbus import request_device_info
 from bms_parser import BMSParser
-from config import BMSConfig
+from mqtt_helper import MQTTPublisher
+from config import BMSConfig, MQTTConfig, AppConfig
 
 
 def print_bms_summary(data: Dict[str, Any]) -> None:
@@ -32,12 +35,6 @@ def print_bms_summary(data: Dict[str, Any]) -> None:
     if 'cycle_count' in data:
         print(f"🔄 Cykly:               {data['cycle_count']}")
     
-    # Kapacity
-    if 'remaining_capacity_ah' in data:
-        print(f"🔋 Zbývající kapacita:  {data['remaining_capacity_ah']:.1f}Ah")
-    if 'full_charge_capacity_ah' in data:
-        print(f"🔋 Celková kapacita:    {data['full_charge_capacity_ah']:.1f}Ah")
-    
     # Teploty
     if any(key in data for key in ['ambient_temp_c', 'mos_temp_c']):
         print("\n🌡️  TEPLOTY:")
@@ -54,27 +51,23 @@ def print_cell_voltages(voltages: list) -> None:
         
     print(f"\n📱 NAPĚTÍ ČLÁNKŮ ({len(voltages)}):")
     
-    # Zobraz všechny články
-    for i in range(len(voltages)):
+    # Zobraz prvních 8 článků
+    for i in range(min(8, len(voltages))):
         print(f"   Článek {i+1:2d}: {voltages[i]:.3f}V")
+    
+    if len(voltages) > 8:
+        print(f"   ... a {len(voltages) - 8} dalších")
     
     # Statistiky
     min_v, max_v = min(voltages), max(voltages)
     avg_v = sum(voltages) / len(voltages)
     diff_v = max_v - min_v
     
-    print(f"\n   📊 Statistiky:")
-    print(f"      Minimum:          {min_v:.3f}V")
-    print(f"      Maximum:          {max_v:.3f}V")
-    print(f"      Průměr:           {avg_v:.3f}V")
-    print(f"      Rozdíl:           {diff_v:.3f}V ({diff_v*1000:.0f}mV)")
+    print(f"   📊 Rozsah: {min_v:.3f}V - {max_v:.3f}V (Δ{diff_v:.3f}V)")
+    print(f"   📊 Průměr: {avg_v:.3f}V")
     
     if diff_v > 0.1:
         print(f"   ⚠️  VAROVÁNÍ: Velký rozdíl napětí ({diff_v*1000:.0f}mV)")
-    elif diff_v > 0.05:
-        print(f"   ⚠️  POZOR: Mírný rozdíl napětí ({diff_v*1000:.0f}mV)")
-    else:
-        print(f"   ✅ Články dobře vyvážené")
 
 
 def read_bms_data() -> Dict[str, Any]:
@@ -110,38 +103,94 @@ def read_bms_data() -> Dict[str, Any]:
 
 def main() -> int:
     """Hlavní funkce"""
+    # Nastavení logování
+    logging.basicConfig(
+        level=getattr(logging, AppConfig.LOG_LEVEL),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
     print("=" * 50)
-    print("🔋 BMS Reader - Jednorázové čtení")
+    print("🔋 BMS Reader - Service 42 + MQTT")
     print("=" * 50)
     print(f"📡 Port: {BMSConfig.PORT}")
     print(f"📡 Adresa: 0x{BMSConfig.BMS_ADDRESS:02X}")
+    print(f"📡 MQTT: {MQTTConfig.BROKER_HOST}:{MQTTConfig.BROKER_PORT}")
+    print(f"🔄 Interval: {AppConfig.READ_INTERVAL}s")
     print()
     
+    # Inicializace MQTT
+    mqtt_publisher = MQTTPublisher()
+    
     try:
-        # Čtení a parsování dat
-        data = read_bms_data()
-        print("✅ Data úspěšně načtena!")
+        # Připojení k MQTT
+        print("📡 Připojování k MQTT...")
+        if not mqtt_publisher.connect():
+            print("❌ Nepodařilo se připojit k MQTT")
+            return 1
+        
+        # Počkáme na připojení
+        time.sleep(2)
+        
+        # Publikuj Home Assistant Auto Discovery
+        print("🏠 Publikování Home Assistant Auto Discovery...")
+        if not mqtt_publisher.publish_discovery_config():
+            print("⚠️  Nepodařilo se publikovat Auto Discovery")
+        
+        print("✅ MQTT inicializace dokončena!")
         print()
         
-        # Zobrazení shrnutí
-        print_bms_summary(data)
-        
-        # Zobrazení napětí článků
-        if 'cell_voltages_v' in data:
-            print_cell_voltages(data['cell_voltages_v'])
-        
-        print("\n" + "=" * 50)
-        print("✅ Čtení dokončeno!")
+        # Hlavní smyčka
+        cycle_count = 0
+        while True:
+            cycle_count += 1
+            print(f"📊 Cyklus #{cycle_count}")
+            print("-" * 30)
+            
+            try:
+                # Čtení a parsování dat
+                data = read_bms_data()
+                print("✅ Data úspěšně načtena!")
+                
+                # Zobrazení shrnutí
+                print_bms_summary(data)
+                
+                # Zobrazení napětí článků
+                if 'cell_voltages_v' in data:
+                    print_cell_voltages(data['cell_voltages_v'])
+                
+                # Publikování na MQTT
+                print("\n📤 Odesílání na MQTT...")
+                if mqtt_publisher.publish_bms_data(data):
+                    print("✅ Data odeslána na MQTT")
+                else:
+                    print("❌ Chyba při odesílání na MQTT")
+                
+                print(f"\n⏰ Další čtení za {AppConfig.READ_INTERVAL}s...")
+                print("=" * 50)
+                
+                # Čekání do dalšího cyklu
+                time.sleep(AppConfig.READ_INTERVAL)
+                
+            except KeyboardInterrupt:
+                print("\n⏹️  Přerušeno uživatelem")
+                break
+            except Exception as e:
+                print(f"❌ Chyba v cyklu: {e}")
+                print(f"⏰ Pokus za {AppConfig.READ_INTERVAL}s...")
+                time.sleep(AppConfig.READ_INTERVAL)
         
         return 0
         
     except Exception as e:
-        print(f"❌ Chyba: {e}")
+        print(f"❌ Kritická chyba: {e}")
         print("\n🔧 Zkontrolujte:")
         print("   - Je BMS zapnutý?")
         print("   - Je správný port v config.ini?")
-        print("   - Je USB kabel připojený?")
+        print("   - Je dostupný MQTT server?")
         return 1
+    finally:
+        print("\n📡 Odpojování od MQTT...")
+        mqtt_publisher.disconnect()
 
 
 if __name__ == "__main__":

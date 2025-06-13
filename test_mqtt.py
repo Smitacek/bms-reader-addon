@@ -61,7 +61,7 @@ def test_mqtt_data():
     
     # Poznámka o připojení
     print("💡 Pro test s reálným MQTT:")
-    print("   1. Upravte config.py s reálnými MQTT údaji")
+    print("   1. Upravte config.ini s reálnými MQTT údaji")
     print("   2. Spusťte main.py")
 
 if __name__ == "__main__":

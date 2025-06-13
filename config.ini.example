@@ -1,0 +1,72 @@
+# BMS Reader Configuration Example
+# Zkopírujte do config.ini a upravte hodnoty
+
+[BMS]
+# Sériový port pro komunikaci s BMS
+# macOS: /dev/tty.usbserial-XXXXX
+# Linux: /dev/ttyUSB0 nebo /dev/ttyACM0
+# Windows: COM1, COM2, ...
+port = /dev/tty.usbserial-B003BHLO
+
+# Adresa BMS na RS485 sběrnici (obvykle 1)
+address = 1
+
+# Baudrate pro komunikaci (obvykle 9600)
+baudrate = 9600
+
+# Timeout pro komunikaci v sekundách
+timeout = 2.0
+
+[MQTT]
+# IP adresa nebo hostname MQTT brokeru (Home Assistant)
+# Příklady: 192.168.1.100, homeassistant.local, 10.0.0.50
+broker_host = 192.168.1.100
+
+# Port MQTT brokeru (standardně 1883, pro TLS 8883)
+broker_port = 1883
+
+# MQTT uživatelské jméno
+# Vytvořte v HA: Settings → People → Users → Add User
+username = mqtt_user
+
+# MQTT heslo
+password = mqtt_password
+
+[DEVICE]
+# Jedinečný identifikátor zařízení (použije se v MQTT topics)
+# Doporučené formáty: bms_garage_01, bms_solar_battery, bms_main
+# BEZ MEZER A SPECIÁLNÍCH ZNAKŮ!
+device_id = bms_lifepo4_01
+
+# Popisný název zařízení pro Home Assistant
+device_name = BMS LiFePO4 Battery
+
+# Model BMS
+device_model = Daren BMS
+
+# Výrobce BMS
+device_manufacturer = Daren
+
+# Verze software
+software_version = 1.0.0
+
+[HOME_ASSISTANT]
+# Prefix pro Home Assistant Auto Discovery (neměňte bez důvodu)
+discovery_prefix = homeassistant
+
+# Base topic pro MQTT zprávy (neměňte bez důvodu)
+base_topic = bms
+
+[APPLICATION]
+# Interval čtení dat v sekundách
+# 10 = každých 10 sekund (časté)
+# 30 = každých 30 sekund (doporučeno)
+# 60 = každou minutu (úsporné)
+read_interval = 30
+
+# Úroveň logování
+# DEBUG = všechny detaily (pro ladění)
+# INFO = základní informace (doporučeno)
+# WARNING = jen varování a chyby
+# ERROR = jen chyby
+log_level = INFO

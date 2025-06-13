@@ -1,0 +1,25 @@
+{
+  "bms": {
+    "port": "/dev/ttyUSB0",
+    "address": 1,
+    "baudrate": 9600,
+    "timeout": 3.0
+  },
+  "mqtt": {
+    "host": "core-mosquitto",
+    "port": 1883,
+    "username": "",
+    "password": "",
+    "discovery_prefix": "homeassistant"
+  },
+  "device": {
+    "id": "bms_rpi_01",
+    "name": "BMS Raspberry Pi Battery",
+    "manufacturer": "Daren",
+    "model": "Daren BMS"
+  },
+  "application": {
+    "read_interval": 30,
+    "log_level": "INFO"
+  }
+}
