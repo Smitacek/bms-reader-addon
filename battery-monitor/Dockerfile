@@ -25,4 +25,5 @@ COPY addon_config.py .
 COPY run.sh /
 RUN chmod a+x /run.sh
 
-CMD [ "/run.sh" ]
+# Direct execution without S6
+CMD ["python3", "/app/main.py"]
