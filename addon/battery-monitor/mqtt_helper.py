@@ -46,16 +46,48 @@ class MQTTPublisher:
         """Callback při publikování zprávy"""
         logger.debug(f"📤 MQTT zpráva publikována: {mid}")
     
-    def connect(self) -> bool:
-        """Připojí se k MQTT brokeru"""
-        try:
-            logger.info(f"📡 Připojování k MQTT {self.config.mqtt_host}:{self.config.mqtt_port}")
-            self.client.connect(self.config.mqtt_host, self.config.mqtt_port, 60)
-            self.client.loop_start()
-            return True
-        except Exception as e:
-            logger.error(f"❌ Chyba připojení k MQTT: {e}")
-            return False
+    def connect(self, timeout: int = 10, retries: int = 3) -> bool:
+        """Připojí se k MQTT brokeru s retry mechanikou"""
+        import time
+        
+        for attempt in range(retries):
+            try:
+                logger.info(f"📡 Pokus #{attempt + 1}: Připojování k MQTT {self.config.mqtt_host}:{self.config.mqtt_port}")
+                
+                # Diagnostika síťové dostupnosti
+                logger.info(f"🔍 Diagnostika MQTT připojení:")
+                logger.info(f"   Host: {self.config.mqtt_host}")
+                logger.info(f"   Port: {self.config.mqtt_port}")
+                logger.info(f"   Username: {'***' if self.config.mqtt_username else 'žádné'}")
+                logger.info(f"   Password: {'***' if self.config.mqtt_password else 'žádné'}")
+                
+                # Připojení k MQTT
+                self.client.connect(self.config.mqtt_host, self.config.mqtt_port, 60)
+                self.client.loop_start()
+                
+                # Čekání na připojení s timeoutem
+                wait_time = 0
+                while wait_time < timeout and not self.connected:
+                    time.sleep(0.5)
+                    wait_time += 0.5
+                
+                if self.connected:
+                    logger.info(f"✅ MQTT připojení úspěšné po {wait_time:.1f}s")
+                    return True
+                else:
+                    logger.warning(f"⏱️ Timeout při čekání na MQTT připojení ({timeout}s)")
+                    self.client.loop_stop()
+                    
+            except Exception as e:
+                logger.error(f"❌ Chyba připojení k MQTT (pokus #{attempt + 1}): {e}")
+                
+            if attempt < retries - 1:
+                wait_time = 5 * (attempt + 1)  # Progressive backoff
+                logger.info(f"⏳ Čekání {wait_time}s před dalším pokusem...")
+                time.sleep(wait_time)
+        
+        logger.error(f"❌ Nepodařilo se připojit k MQTT po {retries} pokusech")
+        return False
     
     def disconnect(self):
         """Odpojí se od MQTT brokeru"""

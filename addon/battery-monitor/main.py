@@ -80,20 +80,29 @@ def main():
     logging.info(f"Read Interval: {config.read_interval}s")
     
     # Initialize MQTT
+    mqtt = None
+    mqtt_connected = False
+    
     try:
         mqtt = MQTTPublisher()
         
-        if mqtt.connect():
-            logging.info(f"MQTT connection successful!")
-            mqtt.publish_discovery_config()
-            logging.info("Home Assistant Auto Discovery config published")
+        # Pokus o připojení k MQTT s retry
+        logging.info("🔌 Inicializace MQTT připojení...")
+        mqtt_connected = mqtt.connect(timeout=15, retries=3)
+        
+        if mqtt_connected:
+            logging.info("✅ MQTT připojení úspěšné!")
+            try:
+                mqtt.publish_discovery_config()
+                logging.info("✅ Home Assistant Auto Discovery config publikován")
+            except Exception as e:
+                logging.warning(f"⚠️ Chyba při publikování discovery config: {e}")
         else:
-            logging.error("Failed to connect to MQTT broker")
-            return 1
+            logging.warning("⚠️ MQTT připojení selhalo - aplikace bude pokračovat bez MQTT")
             
     except Exception as e:
-        logging.error(f"MQTT initialization failed: {e}")
-        return 1
+        logging.error(f"❌ MQTT inicializace selhala: {e}")
+        logging.warning("⚠️ Aplikace bude pokračovat bez MQTT")
     
     # Main monitoring loop
     logging.info(f"Starting monitoring loop (interval: {config.read_interval}s)")
@@ -111,13 +120,23 @@ def main():
             if data:
                 logging.info("✅ Communication completed!")
                 
-                # Publish to MQTT
-                if mqtt.publish_bms_data(data):
-                    logging.info("BMS data published via MQTT")
+                # Publikování do MQTT (jen pokud je připojeno)
+                if mqtt_connected and mqtt:
+                    try:
+                        if mqtt.publish_bms_data(data):
+                            logging.info("📤 BMS data publikována do MQTT")
+                        else:
+                            logging.warning("⚠️ Selhalo publikování do MQTT")
+                            # Pokus o obnovení připojení
+                            if not mqtt.connected:
+                                logging.info("🔄 Pokus o obnovení MQTT připojení...")
+                                mqtt_connected = mqtt.connect(timeout=10, retries=1)
+                    except Exception as e:
+                        logging.error(f"❌ Chyba při MQTT publikování: {e}")
                 else:
-                    logging.warning("Failed to publish data to MQTT")
+                    logging.info("📊 Data přečtena (MQTT nedostupné)")
                 
-                # Print summary
+                # Výpis shrnutí
                 soc = data.get('soc_percent', 0)
                 voltage = data.get('pack_voltage_v', 0)
                 current = data.get('pack_current_a', 0)

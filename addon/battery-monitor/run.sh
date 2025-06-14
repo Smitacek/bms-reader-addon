@@ -20,6 +20,14 @@ get_config_value() {
     echo "$value"
 }
 
+# Diagnostika mode
+if [ "$1" = "diag" ] || [ "$1" = "diagnostics" ]; then
+    echo "🔍 Spouštění diagnostiky..."
+    cd /app
+    python3 diagnostics.py
+    exit 0
+fi
+
 # Wait for MQTT service if running in HA Add-on environment
 if command -v bashio::services.wait &> /dev/null; then
     bashio::log.info "Waiting for MQTT service..."

@@ -1,5 +1,5 @@
 name: "Battery Monitor"
-version: "1.0.3"
+version: "1.0.4"
 slug: "battery-monitor-new"
 description: "BMS Reader for LiFePO4 batteries with MQTT integration"
 arch:

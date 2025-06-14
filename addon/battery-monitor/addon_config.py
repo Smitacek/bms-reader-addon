@@ -40,6 +40,22 @@ class Config:
         self.read_interval = int(options.get('read_interval', os.getenv('READ_INTERVAL', '30')))
         self.log_level = "INFO"
         
+        # Diagnostika konfigurace
+        self._print_diagnostics()
+    
+    def _print_diagnostics(self):
+        """Print configuration diagnostics"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info("🔧 Konfigurace Battery Monitor:")
+        logger.info(f"   BMS Port: {self.bms_port}")
+        logger.info(f"   BMS Address: {self.bms_address}")
+        logger.info(f"   MQTT Host: {self.mqtt_host}")
+        logger.info(f"   MQTT Port: {self.mqtt_port}")
+        logger.info(f"   MQTT Auth: {'Ano' if self.mqtt_username else 'Ne'}")
+        logger.info(f"   Read Interval: {self.read_interval}s")
+        
         # MQTT Discovery
         self.discovery_prefix = "homeassistant"
     
