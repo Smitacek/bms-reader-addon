@@ -51,7 +51,7 @@ schema:
     discovery_prefix: str?
   application:
     read_interval: int(5,300)
-    log_level: list(DEBUG|INFO|WARNING|ERROR)
+    log_level: str
 services:
   - mqtt:mosquitto
 devices:
