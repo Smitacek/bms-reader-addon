@@ -1,12 +1,11 @@
-# Use Python Alpine as base for compatibility 
-ARG BUILD_FROM=python:3.11-alpine
+# Use Home Assistant base image for multi-arch support
+ARG BUILD_FROM
 FROM $BUILD_FROM
 
 # Install system dependencies for serial communication
 RUN apk add --no-cache \
     gcc \
     musl-dev \
-    python3-dev \
     linux-headers
 
 # Set working directory
@@ -16,11 +15,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Copy application files from parent directory (the working standalone version)
-COPY ../main.py .
-COPY ../bms_parser.py .
-COPY ../modbus.py .
-COPY ../mqtt_helper.py .
+# Copy application files
+COPY main.py .
+COPY bms_parser.py .
+COPY modbus.py .
+COPY mqtt_helper.py .
 
 # Copy addon-specific configuration that supports both HA options and env vars
 COPY addon_config.py ./config.py

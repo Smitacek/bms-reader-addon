@@ -4,13 +4,16 @@ slug: bms_reader
 description: "Daren BMS Reader for LiFePO4 batteries with MQTT integration - Service 42 protocol"
 url: "https://github.com/Smitacek/bms-reader-addon"
 arch:
-  - aarch64  # ARM64 (Raspberry Pi 4, Apple Silicon Mac)
-  - armv7    # ARM32 (Raspberry Pi 3, starší RPi)
   - armhf    # ARM hard-float (starší Raspberry Pi)
+  - armv7    # ARM32 (Raspberry Pi 3, starší RPi)  
+  - aarch64  # ARM64 (Raspberry Pi 4, Apple Silicon Mac)
   - amd64    # x86_64 (PC, starší Mac Intel)
+  - i386     # x86 32-bit
 init: false
 startup: application
 boot: auto
+stage: stable
+homeassistant: "2023.1.0"
 options:
   bms:
     port: "/dev/ttyUSB0"
