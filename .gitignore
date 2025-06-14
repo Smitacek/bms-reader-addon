@@ -50,6 +50,15 @@ options.json
 # Virtual environments
 .venv
 
+# Configuration files with sensitive data
+config.ini
+*.env
+.env
+
+# Build artifacts
+*.tar
+*.tar.gz
+
 # Build outputs - PREVENT LARGE FILES
 *.tar.gz
 *.tar
