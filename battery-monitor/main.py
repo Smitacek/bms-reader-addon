@@ -82,7 +82,6 @@ def main():
     # Initialize MQTT
     try:
         mqtt = MQTTPublisher()
-        mqtt.config = config  # Pass config to MQTT publisher
         
         if mqtt.connect():
             logging.info(f"MQTT connection successful!")
