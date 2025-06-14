@@ -49,3 +49,25 @@ options.json
 
 # Virtual environments
 .venv
+
+# Build outputs - PREVENT LARGE FILES
+*.tar.gz
+*.tar
+*.zip
+
+# Docker images  
+*.img
+*.iso
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Config files with secrets
+config.ini
+!config.ini.example

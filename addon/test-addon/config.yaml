@@ -1,0 +1,10 @@
+name: "Test Add-on"
+version: "1.0.0"
+slug: "test-addon"
+description: "Simple test add-on"
+arch:
+  - armhf
+  - aarch64
+  - amd64
+startup: application
+boot: manual
