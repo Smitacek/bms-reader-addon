@@ -1,6 +1,6 @@
-name: BMS Reader
-version: "1.0.5"
-slug: bms-reader
+name: Battery Monitor
+version: "1.0.6"
+slug: battery-monitor
 description: "Daren BMS Reader for LiFePO4 batteries with MQTT integration - Service 42 protocol"
 url: "https://github.com/Smitacek/bms-reader-addon"
 arch:
