@@ -1,0 +1,15 @@
+# Test simple add-on
+name: "BMS Reader Test"
+version: "1.0.5"
+slug: "bms_reader_test"
+description: "Simple test version of BMS Reader"
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+startup: application
+boot: manual
+stage: stable
+homeassistant: "2023.1.0"
