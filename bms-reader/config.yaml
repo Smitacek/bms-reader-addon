@@ -28,7 +28,7 @@ options:
     port: 1883
     username: ""
     password: ""
-      discovery_prefix: "homeassistant"
+    discovery_prefix: "homeassistant"
   application:
     read_interval: 30
     log_level: "INFO"
