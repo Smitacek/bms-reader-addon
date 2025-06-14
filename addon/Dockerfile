@@ -1,29 +1,32 @@
+# Use Python Alpine as base for compatibility 
 ARG BUILD_FROM=python:3.11-alpine
 FROM $BUILD_FROM
 
-# Install Python and dependencies
+# Install system dependencies for serial communication
 RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    py3-setuptools \
-    py3-wheel \
     gcc \
     musl-dev \
-    python3-dev
+    python3-dev \
+    linux-headers
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements
+# Copy requirements and install Python packages
 COPY requirements.txt .
-
-# Install Python packages
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Copy application files
+# Copy application files from parent directory (the working standalone version)
+COPY ../main.py .
+COPY ../bms_parser.py .
+COPY ../modbus.py .
+COPY ../mqtt_helper.py .
+
+# Copy addon-specific configuration that supports both HA options and env vars
+COPY addon_config.py ./config.py
+
+# Copy run script
 COPY run.sh /
-COPY *.py /app/
-COPY addon_config.py /app/config.py
 
 # Make run script executable
 RUN chmod a+x /run.sh

@@ -1,7 +1,7 @@
 name: BMS Reader
-version: "1.0.0"
+version: "1.0.4"
 slug: bms_reader
-description: "Daren BMS Reader for LiFePO4 batteries with MQTT integration"
+description: "Daren BMS Reader for LiFePO4 batteries with MQTT integration - Service 42 protocol"
 url: "https://github.com/your-repo/bms-reader"
 arch:
   - aarch64  # ARM64 (Raspberry Pi 4, Apple Silicon Mac)
