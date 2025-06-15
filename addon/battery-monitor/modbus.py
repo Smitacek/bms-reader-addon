@@ -7,18 +7,18 @@ def request_device_info(
     port: str,
     address: int = 0x01,
     baudrate: int = 9600,
-    timeout: float = 2.0  # Optimalizovaný timeout
+    timeout: float = 2.0  # Optimized timeout
 ) -> bytes:
     """
-    Odesílá RS-485 ASCII rámec pro Service 42 'GetDeviceInfo' a čte zpět odpověď až do CR.
+    Sends RS-485 ASCII frame for Service 42 'GetDeviceInfo' and reads back response until CR.
     
     Request (hex-ASCII): "~22014A42E00201FD28␍" 
-    Response: ASCII hex data končící '\r'
+    Response: ASCII hex data ending with '\r'
     """
-    # Sestavíme ASCII rámec přesně podle README-2.md
+    # Build ASCII frame exactly according to README-2.md
     frame = f"~22{address:02X}4A42E002{address:02X}FD28\r".encode('ascii')
     
-    print(f"📤 Odesílám: {frame}")
+    print(f"📤 Sending: {frame}")
     
     with serial.Serial(
         port=port,
@@ -28,25 +28,25 @@ def request_device_info(
         stopbits=serial.STOPBITS_ONE,
         timeout=timeout
     ) as ser:
-        # Vyčistíme buffer
+        # Clear buffers
         ser.reset_input_buffer()
         ser.reset_output_buffer()
         
-        # Pošleme request
+        # Send request
         ser.write(frame)
         ser.flush()
         
-        print("📥 Čekám na odpověď...")
+        print("📥 Waiting for response...")
         
-        # Čteme odpověď - BMS odpovídá ASCII hex daty končícími '\r'
+        # Read response - BMS responds with ASCII hex data ending with '\r'
         response = ser.read_until(expected=b'\r')
         
-        print(f"📨 Přijato ({len(response)} bytů): {response}")
+        print(f"📨 Received ({len(response)} bytes): {response}")
         
-        # Zkontrolujeme, zda jsou ještě dostupná data bez čekání
+        # Check if more data is available without waiting
         if ser.in_waiting > 0:
             remaining = ser.read(ser.in_waiting)
-            print(f"📨 Další data ({len(remaining)} bytů): {remaining}")
+            print(f"📨 Additional data ({len(remaining)} bytes): {remaining}")
             response += remaining
             
         return response
@@ -78,9 +78,9 @@ def send_modbus_request(
     timeout: float = 1.0
 ) -> bytes:
     """
-    Sestaví a odešle Modbus RTU frame a přečte odpověď.
+    Builds and sends Modbus RTU frame and reads response.
     """
-    # Sestav požadavek bez CRC
+    # Build request without CRC
     frame = bytearray([
         slave_addr & 0xFF,
         function_code & 0xFF,
@@ -90,12 +90,12 @@ def send_modbus_request(
         quantity & 0xFF,
     ])
     
-    # Připoj CRC
+    # Append CRC
     crc = compute_crc16(bytes(frame))
     frame.append(crc & 0xFF)
     frame.append((crc >> 8) & 0xFF)
     
-    # Komunikace
+    # Communication
     with serial.Serial(
         port=port,
         baudrate=baudrate,
@@ -110,9 +110,9 @@ def send_modbus_request(
     
     return response
 
-# Příklad použití:
+# Example usage:
 if __name__ == "__main__":
-    print("=== Test modulu modbus.py ===")
+    print("=== Test modbus.py module ===")
     
     try:
         raw_response = request_device_info(
@@ -121,8 +121,8 @@ if __name__ == "__main__":
             baudrate=9600,
             timeout=5.0
         )
-        print(f"✅ Service 42 odpověď: {len(raw_response)} bytů")
+        print(f"✅ Service 42 response: {len(raw_response)} bytes")
         print(f"📄 Hex: {raw_response.hex()}")
         
     except Exception as e:
-        print(f"❌ Chyba: {e}")
+        print(f"❌ Error: {e}")

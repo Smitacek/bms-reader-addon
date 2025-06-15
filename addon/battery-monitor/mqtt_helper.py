@@ -30,96 +30,96 @@ class MultiBatteryMQTTPublisher:
         self.connected = False
         
     def _on_connect(self, client, userdata, flags, rc):
-        """Callback při připojení k MQTT"""
+        """Callback for MQTT connection"""
         if rc == 0:
             self.connected = True
-            logger.info(f"✅ Připojeno k MQTT broker {self.config.mqtt_host}:{self.config.mqtt_port}")
+            logger.info(f"✅ Connected to MQTT broker {self.config.mqtt_host}:{self.config.mqtt_port}")
         else:
             self.connected = False
-            logger.error(f"❌ Chyba připojení k MQTT: {rc}")
+            logger.error(f"❌ MQTT connection error: {rc}")
     
     def _on_disconnect(self, client, userdata, rc):
-        """Callback při odpojení od MQTT"""
+        """Callback for MQTT disconnection"""
         self.connected = False
-        logger.info("📡 Odpojeno od MQTT broker")
+        logger.info("📡 Disconnected from MQTT broker")
     
     def _on_publish(self, client, userdata, mid):
-        """Callback při publikování zprávy"""
-        logger.debug(f"📤 MQTT zpráva publikována: {mid}")
+        """Callback for MQTT message publishing"""
+        logger.debug(f"📤 MQTT message published: {mid}")
     
     def connect(self, timeout: int = 10, retries: int = 3) -> bool:
-        """Připojí se k MQTT brokeru s retry mechanikou"""
+        """Connects to MQTT broker with retry mechanism"""
         for attempt in range(retries):
             try:
-                logger.info(f"📡 Pokus #{attempt + 1}: Připojování k MQTT {self.config.mqtt_host}:{self.config.mqtt_port}")
+                logger.info(f"📡 Attempt #{attempt + 1}: Connecting to MQTT {self.config.mqtt_host}:{self.config.mqtt_port}")
                 
-                # Diagnostika síťové dostupnosti
-                logger.info(f"🔍 Diagnostika MQTT připojení:")
+                # Network availability diagnostics
+                logger.info(f"🔍 MQTT connection diagnostics:")
                 logger.info(f"   Host: {self.config.mqtt_host}")
                 logger.info(f"   Port: {self.config.mqtt_port}")
-                logger.info(f"   Username: {'***' if self.config.mqtt_username else 'žádné'}")
-                logger.info(f"   Password: {'***' if self.config.mqtt_password else 'žádné'}")
+                logger.info(f"   Username: {'***' if self.config.mqtt_username else 'none'}")
+                logger.info(f"   Password: {'***' if self.config.mqtt_password else 'none'}")
                 
-                # Připojení k MQTT
+                # Connect to MQTT
                 self.client.connect(self.config.mqtt_host, self.config.mqtt_port, 60)
                 self.client.loop_start()
                 
-                # Čekání na připojení s timeoutem
+                # Wait for connection with timeout
                 wait_time = 0
                 while wait_time < timeout and not self.connected:
                     time.sleep(0.5)
                     wait_time += 0.5
                 
                 if self.connected:
-                    logger.info(f"✅ MQTT připojení úspěšné po {wait_time:.1f}s")
+                    logger.info(f"✅ MQTT connection successful after {wait_time:.1f}s")
                     return True
                 else:
-                    logger.warning(f"⏱️ Timeout při čekání na MQTT připojení ({timeout}s)")
+                    logger.warning(f"⏱️ Timeout waiting for MQTT connection ({timeout}s)")
                     self.client.loop_stop()
                     
             except Exception as e:
-                logger.error(f"❌ Chyba připojení k MQTT (pokus #{attempt + 1}): {e}")
+                logger.error(f"❌ MQTT connection error (attempt #{attempt + 1}): {e}")
                 
             if attempt < retries - 1:
                 wait_time = 5 * (attempt + 1)  # Progressive backoff
-                logger.info(f"⏳ Čekání {wait_time}s před dalším pokusem...")
+                logger.info(f"⏳ Waiting {wait_time}s before next attempt...")
                 time.sleep(wait_time)
         
-        logger.error(f"❌ Nepodařilo se připojit k MQTT po {retries} pokusech")
+        logger.error(f"❌ Failed to connect to MQTT after {retries} attempts")
         return False
     
     def disconnect(self):
-        """Odpojí se od MQTT brokeru"""
+        """Disconnects from MQTT broker"""
         self.client.loop_stop()
         self.client.disconnect()
     
     def publish_multi_battery_discovery(self, battery_names: List[str]) -> bool:
-        """Publikuje Home Assistant Auto Discovery pro všechny baterie"""
+        """Publishes Home Assistant Auto Discovery for all batteries"""
         if not self.connected:
-            logger.error("❌ Není připojeno k MQTT - nelze publikovat discovery")
+            logger.error("❌ Not connected to MQTT - cannot publish discovery")
             return False
         
-        logger.info(f"📤 Publikování Auto Discovery pro {len(battery_names)} baterií...")
+        logger.info(f"📤 Publishing Auto Discovery for {len(battery_names)} batteries...")
         
         success_count = 0
         
-        # Discovery pro každou individuální baterii
+        # Discovery for each individual battery
         for battery_name in battery_names:
             if self._publish_battery_discovery(battery_name):
                 success_count += 1
         
-        # Discovery pro virtuální baterii (pokud je povolena)
+        # Discovery for virtual battery (if enabled)
         if self.config.enable_virtual_battery and len(battery_names) > 1:
             if self._publish_battery_discovery("_virtual_battery", is_virtual=True):
                 success_count += 1
         
-        logger.info(f"📤 Auto Discovery publikováno pro {success_count} baterií")
+        logger.info(f"📤 Auto Discovery published for {success_count} batteries")
         return success_count > 0
     
     def _publish_battery_discovery(self, battery_name: str, is_virtual: bool = False) -> bool:
-        """Publikuje discovery config pro jednu baterii"""
+        """Publishes discovery config for one battery"""
         try:
-            # Určení názvu zařízení
+            # Determine device name
             if is_virtual:
                 device_name = self.config.virtual_battery_name
                 device_id = f"{self.config.device_id}_virtual"
@@ -127,10 +127,10 @@ class MultiBatteryMQTTPublisher:
                 device_name = battery_name
                 device_id = f"{self.config.device_id}_{battery_name.lower().replace(' ', '_')}"
             
-            # Definice senzorů
+            # Sensor definitions
             sensors = self._get_sensor_definitions(is_virtual)
             
-            # Publikování discovery pro každý senzor
+            # Publish discovery for each sensor
             for sensor in sensors:
                 discovery_topic = f"homeassistant/sensor/{device_id}/{sensor['object_id']}/config"
                 state_topic = f"bms/{device_id}/{sensor['object_id']}"
@@ -149,23 +149,23 @@ class MultiBatteryMQTTPublisher:
                     }
                 }
                 
-                # Přidání volitelných atributů
+                # Add optional attributes
                 for attr in ['unit_of_measurement', 'device_class', 'state_class', 'icon']:
                     if attr in sensor:
                         config[attr] = sensor[attr]
                 
-                # Publikování
+                # Publish
                 self.client.publish(discovery_topic, json.dumps(config), retain=True)
                 logger.debug(f"Published discovery for {device_name} {sensor['name']}")
             
             return True
             
         except Exception as e:
-            logger.error(f"❌ Chyba při publikování discovery pro {battery_name}: {e}")
+            logger.error(f"❌ Error publishing discovery for {battery_name}: {e}")
             return False
     
     def _get_sensor_definitions(self, is_virtual: bool = False) -> List[Dict]:
-        """Vrací definice senzorů pro baterii"""
+        """Returns sensor definitions for battery"""
         base_sensors = [
             {
                 "name": "SOC",
@@ -245,7 +245,7 @@ class MultiBatteryMQTTPublisher:
             }
         ]
         
-        # Přidání speciálních senzorů pro virtuální baterii
+        # Add special sensors for virtual battery
         if is_virtual:
             virtual_sensors = [
                 {
@@ -265,19 +265,19 @@ class MultiBatteryMQTTPublisher:
         return base_sensors
     
     def publish_battery_data(self, battery_name: str, data: Dict[str, Any], is_virtual: bool = False) -> bool:
-        """Publikuje data jedné baterie"""
+        """Publishes data for one battery"""
         if not self.connected:
-            logger.error("❌ Není připojeno k MQTT - nelze publikovat data")
+            logger.error("❌ Not connected to MQTT - cannot publish data")
             return False
         
         try:
-            # Určení device_id
+            # Determine device_id
             if is_virtual:
                 device_id = f"{self.config.device_id}_virtual"
             else:
                 device_id = f"{self.config.device_id}_{battery_name.lower().replace(' ', '_')}"
             
-            # Publikování jednotlivých senzorů
+            # Publish individual sensors
             sensor_mappings = {
                 'soc': 'soc_percent',
                 'pack_voltage': 'pack_voltage_v',
@@ -291,7 +291,7 @@ class MultiBatteryMQTTPublisher:
                 'status': 'status'
             }
             
-            # Přidání speciálních mappingů pro virtuální baterii
+            # Add special mappings for virtual battery
             if is_virtual:
                 sensor_mappings.update({
                     'battery_count': 'battery_count',
@@ -304,7 +304,7 @@ class MultiBatteryMQTTPublisher:
                     topic = f"bms/{device_id}/{sensor_id}"
                     value = data[data_key]
                     
-                    # Speciální handling pro některé typy dat
+                    # Special handling for some data types
                     if isinstance(value, list):
                         value = ', '.join(map(str, value))
                     elif isinstance(value, float):
@@ -313,17 +313,17 @@ class MultiBatteryMQTTPublisher:
                     self.client.publish(topic, str(value))
                     published_count += 1
             
-            logger.debug(f"📤 Publikováno {published_count} senzorů pro {battery_name}")
+            logger.debug(f"📤 Published {published_count} sensors for {battery_name}")
             return True
             
         except Exception as e:
-            logger.error(f"❌ Chyba při publikování dat pro {battery_name}: {e}")
+            logger.error(f"❌ Error publishing data for {battery_name}: {e}")
             return False
     
     def publish_all_battery_data(self, all_data: Dict[str, Dict[str, Any]]) -> bool:
-        """Publikuje data všech baterií"""
+        """Publishes data for all batteries"""
         if not self.connected:
-            logger.error("❌ Není připojeno k MQTT - nelze publikovat data")
+            logger.error("❌ Not connected to MQTT - cannot publish data")
             return False
         
         success_count = 0
@@ -333,7 +333,7 @@ class MultiBatteryMQTTPublisher:
             if self.publish_battery_data(battery_name, data, is_virtual):
                 success_count += 1
         
-        logger.info(f"📤 Publikována data {success_count}/{len(all_data)} baterií")
+        logger.info(f"📤 Published data for {success_count}/{len(all_data)} batteries")
         return success_count > 0
 
 

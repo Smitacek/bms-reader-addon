@@ -1,33 +1,33 @@
 # Battery Monitor Add-on
 
-## Přehled
+## Overview
 
-Battery Monitor Add-on umožňuje čtení dat z BMS (Battery Management System) LiFePO4 baterií přes Modbus RTU a jejich publikování do Home Assistant prostřednictvím MQTT Auto Discovery.
+Battery Monitor Add-on enables reading data from BMS (Battery Management System) LiFePO4 batteries via Modbus RTU and publishing them to Home Assistant through MQTT Auto Discovery.
 
-## Funkce
+## Features
 
-- ✅ Čtení dat z BMS LiFePO4 baterií přes Modbus RTU
-- ✅ Automatická konfigurace senzorů v Home Assistant (Auto Discovery)
-- ✅ MQTT publikování dat baterií (napětí, proud, SOC, teploty atd.)
-- ✅ Podpora různých USB/sériových portů
-- ✅ Konfigurovatelný interval čtení
+- ✅ Reading data from BMS LiFePO4 batteries via Modbus RTU
+- ✅ Automatic sensor configuration in Home Assistant (Auto Discovery)
+- ✅ MQTT publishing of battery data (voltage, current, SOC, temperatures, etc.)
+- ✅ Support for various USB/serial ports
+- ✅ Configurable read interval
 
-## Konfigurace
+## Configuration
 
-### BMS Nastavení
+### BMS Settings
 
-- **BMS Port**: Sériový port pro komunikaci s BMS (např. `/dev/ttyUSB0`)
-- **BMS Address**: Modbus adresa BMS zařízení (obvykle 1)
-- **Read Interval**: Interval čtení dat v sekundách (10-300s)
+- **BMS Port**: Serial port for BMS communication (e.g. `/dev/ttyUSB0`)
+- **BMS Address**: Modbus address of BMS device (usually 1)
+- **Read Interval**: Data reading interval in seconds (10-300s)
 
-### MQTT Nastavení
+### MQTT Settings
 
-- **MQTT Host**: Adresa MQTT brokeru (výchozí: `core-mosquitto`)
-- **MQTT Port**: Port MQTT brokeru (výchozí: 1883)
-- **MQTT Username**: Uživatelské jméno pro MQTT broker (volitelné)
-- **MQTT Password**: Heslo pro MQTT broker (volitelné)
+- **MQTT Host**: MQTT broker address (default: `core-mosquitto`)
+- **MQTT Port**: MQTT broker port (default: 1883)
+- **MQTT Username**: Username for MQTT broker (optional)
+- **MQTT Password**: Password for MQTT broker (optional)
 
-### Příklad konfigurace
+### Example configuration
 
 ```yaml
 bms_port: "/dev/ttyUSB0"
@@ -39,82 +39,82 @@ mqtt_password: "your_password"
 read_interval: 30
 ```
 
-## MQTT Autentizace
+## MQTT Authentication
 
-Pokud váš MQTT broker vyžaduje autentizaci, musíte nastavit `mqtt_username` a `mqtt_password`. Pro Home Assistant Mosquitto Add-on:
+If your MQTT broker requires authentication, you must set `mqtt_username` and `mqtt_password`. For Home Assistant Mosquitto Add-on:
 
-1. Otevřete Mosquitto Add-on konfiguraci
-2. Přidejte uživatele do sekce `logins`:
+1. Open Mosquitto Add-on configuration
+2. Add user to `logins` section:
    ```yaml
    logins:
      - username: homeassistant
        password: your_secure_password
    ```
-3. Restartujte Mosquitto Add-on
-4. V Battery Monitor Add-on nastavte stejné údaje
+3. Restart Mosquitto Add-on
+4. Set the same credentials in Battery Monitor Add-on
 
-## Podporovaná data
+## Supported data
 
-Add-on čte a publikuje následující data z BMS:
+Add-on reads and publishes the following data from BMS:
 
-### Základní údaje
-- **SOC** (State of Charge) - stav nabití v %
-- **Voltage** - celkové napětí baterie v V
-- **Current** - aktuální proud v A
-- **Power** - výkon v W
-- **Remaining Capacity** - zbývající kapacita v Ah
+### Basic data
+- **SOC** (State of Charge) - charge level in %
+- **Voltage** - total battery voltage in V
+- **Current** - current flow in A
+- **Power** - power in W
+- **Remaining Capacity** - remaining capacity in Ah
 
-### Teploty
-- **Temperature 1-4** - teploty senzorů v °C
-- **Average Temperature** - průměrná teplota v °C
+### Temperatures
+- **Temperature 1-4** - sensor temperatures in °C
+- **Average Temperature** - average temperature in °C
 
-### Napětí článků
-- **Cell Voltage 1-16** - napětí jednotlivých článků v V
-- **Cell Voltage Delta** - rozdíl mezi max a min článkem v V
+### Cell voltages
+- **Cell Voltage 1-16** - individual cell voltages in V
+- **Cell Voltage Delta** - difference between max and min cell in V
 
-### Stav systému
-- **Cycles** - počet cyklů nabíjení
-- **Balancing Status** - stav balancování
-- **Protection Status** - stav ochrany
+### System status
+- **Cycles** - number of charge cycles
+- **Balancing Status** - balancing state
+- **Protection Status** - protection state
 
-## Řešení problémů
+## Troubleshooting
 
 ### MQTT Error 5 (Authentication failure)
 
-Pokud vidíte chybu "Chyba připojení k MQTT: 5", znamená to problém s autentizací:
+If you see error "MQTT connection error: 5", it means authentication problem:
 
-1. Zkontrolujte, zda je MQTT broker správně nakonfigurován
-2. Ověřte username/password v konfiguraci
-3. Ujistěte se, že Mosquitto Add-on má vytvořený uživatel
-4. Zkuste prázdné username/password pokud broker nevyžaduje autentizaci
+1. Check if MQTT broker is correctly configured
+2. Verify username/password in configuration
+3. Make sure Mosquitto Add-on has created user
+4. Try empty username/password if broker doesn't require authentication
 
-### Chyba čtení z BMS
+### BMS reading error
 
-Pokud se nepodaří číst data z BMS:
+If data reading from BMS fails:
 
-1. Zkontrolujte připojení USB/sériového kabelu
-2. Ověřte správný port (můžete použít `dmesg | grep tty`)
-3. Zkontrolujte BMS adresu (obvykle 1)
-4. Ujistěte se, že BMS podporuje Modbus RTU protokol
+1. Check USB/serial cable connection
+2. Verify correct port (you can use `dmesg | grep tty`)
+3. Check BMS address (usually 1)
+4. Make sure BMS supports Modbus RTU protocol
 
 ### Debug log
 
-Pro detailní diagnostiku můžete dočasně změnit log level na DEBUG v `addon_config.py`:
+For detailed diagnostics you can temporarily change log level to DEBUG in `addon_config.py`:
 
 ```python
 self.log_level = "DEBUG"
 ```
 
-## Technické informace
+## Technical information
 
-- **Protokol**: Modbus RTU
+- **Protocol**: Modbus RTU
 - **Baudrate**: 9600
 - **Data bits**: 8
 - **Stop bits**: 1
 - **Parity**: None
 - **Timeout**: 2s
 
-## Podpora
+## Support
 
-Pro podporu a hlášení chyb použijte GitHub Issues v repositáři:
+For support and bug reports use GitHub Issues in repository:
 https://github.com/Smitacek/bms-reader-addon/issues

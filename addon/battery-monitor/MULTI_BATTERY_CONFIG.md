@@ -1,6 +1,6 @@
-# Ukázková konfigurace pro Multi-Battery Monitor
+# Sample Configuration for Multi-Battery Monitor
 
-## Jednoduchá konfigurace (jedna baterie - zpětná kompatibilita)
+## Simple Configuration (single battery - backward compatibility)
 ```yaml
 bms_port: "/dev/ttyUSB0"
 bms_address: 1
@@ -11,12 +11,12 @@ mqtt_password: ""
 read_interval: 30
 ```
 
-## Multi-battery konfigurace (až 16 baterií)
+## Multi-battery configuration (up to 16 batteries)
 ```yaml
-# Povolení multi-battery módu
+# Enable multi-battery mode
 multi_battery_mode: true
 
-# Konfigurace jednotlivých baterií
+# Individual battery configuration
 batteries:
   - port: "/dev/ttyUSB0"
     address: 1
@@ -33,13 +33,13 @@ batteries:
   - port: "/dev/ttyUSB1"
     address: 2
     name: "Battery_4"
-    enabled: false  # dočasně vypnuto
+    enabled: false  # temporarily disabled
 
-# Virtuální baterie (agreguje data ze všech baterií)
+# Virtual battery (aggregates data from all batteries)
 enable_virtual_battery: true
 virtual_battery_name: "Battery Bank"
 
-# MQTT konfigurace
+# MQTT configuration
 mqtt_host: "core-mosquitto"
 mqtt_port: 1883
 mqtt_username: "mqtt_user"
@@ -47,12 +47,12 @@ mqtt_password: "mqtt_password"
 read_interval: 30
 ```
 
-## Příklad pro solární systém s 8 bateriemi
+## Example for solar system with 8 batteries
 ```yaml
 multi_battery_mode: true
 
 batteries:
-  # Rack 1 - 4 baterie
+  # Rack 1 - 4 batteries
   - port: "/dev/ttyUSB0"
     address: 1
     name: "Rack1_Battery1"
@@ -70,7 +70,7 @@ batteries:
     name: "Rack1_Battery4"
     enabled: true
     
-  # Rack 2 - 4 baterie
+  # Rack 2 - 4 batteries
   - port: "/dev/ttyUSB1"
     address: 1
     name: "Rack2_Battery1"
@@ -88,7 +88,7 @@ batteries:
     name: "Rack2_Battery4"
     enabled: true
 
-# Virtuální baterie pro celý systém
+# Virtual battery for entire system
 enable_virtual_battery: true
 virtual_battery_name: "Solar Battery System"
 
@@ -99,40 +99,40 @@ mqtt_password: "ha_password"
 read_interval: 30
 ```
 
-## Home Assistant senzory
+## Home Assistant sensors
 
-### Individuální baterie
-Pro každou baterii budou vytvořeny senzory:
-- `sensor.battery_1_soc` - SOC baterie 1
-- `sensor.battery_1_pack_voltage` - Napětí baterie 1
-- `sensor.battery_1_pack_current` - Proud baterie 1
-- ... (pro každou baterii)
+### Individual batteries
+For each battery, sensors will be created:
+- `sensor.battery_1_soc` - SOC of battery 1
+- `sensor.battery_1_pack_voltage` - Voltage of battery 1
+- `sensor.battery_1_pack_current` - Current of battery 1
+- ... (for each battery)
 
-### Virtuální baterie (agregované hodnoty)
-- `sensor.battery_bank_soc` - Průměrný SOC všech baterií
-- `sensor.battery_bank_pack_voltage` - Celkové napětí (suma)
-- `sensor.battery_bank_pack_current` - Celkový proud (suma)
-- `sensor.battery_bank_power` - Celkový výkon
-- `sensor.battery_bank_battery_count` - Počet připojených baterií
-- `sensor.battery_bank_connected_batteries` - Seznam připojených baterií
+### Virtual battery (aggregated values)
+- `sensor.battery_bank_soc` - Average SOC of all batteries
+- `sensor.battery_bank_pack_voltage` - Total voltage (sum)
+- `sensor.battery_bank_pack_current` - Total current (sum)
+- `sensor.battery_bank_power` - Total power
+- `sensor.battery_bank_battery_count` - Number of connected batteries
+- `sensor.battery_bank_connected_batteries` - List of connected batteries
 
-## Výhody multi-battery módu
+## Benefits of multi-battery mode
 
-1. **Monitorování jednotlivých baterií**
-   - Každá baterie má vlastní senzory v HA
-   - Možnost sledovat výkon jednotlivých článků
-   - Identifikace problémových baterií
+1. **Individual battery monitoring**
+   - Each battery has its own sensors in HA
+   - Ability to monitor individual cell performance
+   - Identification of problematic batteries
 
-2. **Virtuální baterie**
-   - Celkový přehled o systému
-   - Agregované hodnoty (SOC, výkon, kapacita)
-   - Jednoduchá automatizace pro celý systém
+2. **Virtual battery**
+   - Overall system overview
+   - Aggregated values (SOC, power, capacity)
+   - Simple automation for the entire system
 
-3. **Flexibilní konfigurace**
-   - Až 16 baterií na různých portech/adresách
-   - Možnost dočasně vypnout baterie
-   - Vlastní názvy pro lepší identifikaci
+3. **Flexible configuration**
+   - Up to 16 batteries on different ports/addresses
+   - Ability to temporarily disable batteries
+   - Custom names for better identification
 
-4. **Zpětná kompatibilita**
-   - Stará konfigurace (jedna baterie) stále funguje
-   - Plynulý přechod na multi-battery mód
+4. **Backward compatibility**
+   - Old configuration (single battery) still works
+   - Smooth transition to multi-battery mode

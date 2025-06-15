@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.5] - 2025-06-15
+### Changed
+- **Language Unification**: Complete translation of all Czech text to English
+- Translated all logging messages, comments, and documentation to English
+- Updated user interface text for professional consistency
+- Enhanced documentation with English-only content
+
+### Technical
+- All Python code comments translated to English
+- Error messages and diagnostic output now in English
+- Documentation files (DOCS.md, MULTI_BATTERY_CONFIG.md) fully translated
+- Consistent terminology across all components
+
 ## [1.1.4] - 2025-06-15
 
 ### Added

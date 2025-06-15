@@ -1,12 +1,16 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.5-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
 
-## 🆕 New in Version 1.1.0
+## 🆕 New in Version 1.1.5
 
+- ✅ **Language Unification** - Complete English interface and documentation
+- ✅ **Fixed Icons** - Proper PNG and SVG icons working correctly
+- ✅ **Enhanced Logging** - Detailed startup and runtime diagnostics
+- ✅ **Code Refactoring** - Cleaner, more maintainable codebase
 - ✅ **Multi-Battery Support** - Monitor up to 16 batteries simultaneously
 - ✅ **Virtual Battery** - Aggregated data from all batteries in one entity
 - ✅ **Flexible Configuration** - Different ports and addresses for each battery

@@ -60,7 +60,7 @@ class Config:
         self.read_interval = int(options.get('read_interval', os.getenv('READ_INTERVAL', '30')))
         self.log_level = "INFO"
         
-        # Diagnostika konfigurace
+        # Configuration diagnostics
         self._print_diagnostics()
     
     def _load_batteries(self, options: Dict) -> List[BatteryConfig]:

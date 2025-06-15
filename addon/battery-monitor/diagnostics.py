@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Diagnostický script pro Battery Monitor addon
+Diagnostic script for Battery Monitor addon
 """
 
 import os
@@ -19,8 +19,8 @@ def setup_logging():
     )
 
 def check_network():
-    """Kontrola síťové dostupnosti"""
-    logging.info("🌐 Kontrola síťové dostupnosti:")
+    """Check network availability"""
+    logging.info("🌐 Network availability check:")
     
     # DNS resolution
     try:
@@ -28,22 +28,22 @@ def check_network():
         result = socket.gethostbyname('core-mosquitto')
         logging.info(f"✅ DNS: core-mosquitto -> {result}")
     except Exception as e:
-        logging.error(f"❌ DNS: core-mosquitto nedostupné: {e}")
+        logging.error(f"❌ DNS: core-mosquitto unreachable: {e}")
     
     # Ping test
     try:
         result = subprocess.run(['ping', '-c', '1', 'core-mosquitto'], 
                               capture_output=True, text=True, timeout=5)
         if result.returncode == 0:
-            logging.info("✅ PING: core-mosquitto dostupné")
+            logging.info("✅ PING: core-mosquitto reachable")
         else:
-            logging.error("❌ PING: core-mosquitto nedostupné")
+            logging.error("❌ PING: core-mosquitto unreachable")
     except Exception as e:
-        logging.error(f"❌ PING: Chyba při testování: {e}")
+        logging.error(f"❌ PING: Error during test: {e}")
 
 def check_mqtt_port():
-    """Kontrola MQTT portu"""
-    logging.info("🔌 Kontrola MQTT portu:")
+    """Check MQTT port"""
+    logging.info("🔌 MQTT port check:")
     
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -52,60 +52,60 @@ def check_mqtt_port():
         sock.close()
         
         if result == 0:
-            logging.info("✅ Port 1883: dostupný")
+            logging.info("✅ Port 1883: available")
         else:
-            logging.error("❌ Port 1883: nedostupný")
+            logging.error("❌ Port 1883: unavailable")
             
     except Exception as e:
-        logging.error(f"❌ Port test chyba: {e}")
+        logging.error(f"❌ Port test error: {e}")
 
 def check_environment():
-    """Kontrola prostředí"""
-    logging.info("🔧 Kontrola prostředí:")
+    """Check environment"""
+    logging.info("🔧 Environment check:")
     
     # Environment variables
     env_vars = ['MQTT_HOST', 'MQTT_PORT', 'MQTT_USERNAME', 'MQTT_PASSWORD']
     for var in env_vars:
-        value = os.getenv(var, 'není nastaveno')
-        if var in ['MQTT_PASSWORD'] and value != 'není nastaveno':
+        value = os.getenv(var, 'not set')
+        if var in ['MQTT_PASSWORD'] and value != 'not set':
             value = '***'
         logging.info(f"   {var}: {value}")
     
     # Options file
     options_file = Path('/data/options.json')
     if options_file.exists():
-        logging.info("✅ Options file: existuje")
+        logging.info("✅ Options file: exists")
         try:
             import json
             with open(options_file) as f:
                 options = json.load(f)
-            logging.info(f"   MQTT Host: {options.get('mqtt_host', 'neuvedeno')}")
-            logging.info(f"   MQTT Port: {options.get('mqtt_port', 'neuvedeno')}")
-            logging.info(f"   MQTT User: {options.get('mqtt_username', 'neuvedeno')}")
+            logging.info(f"   MQTT Host: {options.get('mqtt_host', 'not specified')}")
+            logging.info(f"   MQTT Port: {options.get('mqtt_port', 'not specified')}")
+            logging.info(f"   MQTT User: {options.get('mqtt_username', 'not specified')}")
         except Exception as e:
-            logging.error(f"❌ Chyba čtení options: {e}")
+            logging.error(f"❌ Error reading options: {e}")
     else:
-        logging.warning("⚠️ Options file neexistuje")
+        logging.warning("⚠️ Options file does not exist")
 
 def check_mqtt_manual():
-    """Manuální test MQTT"""
-    logging.info("🔍 Manuální MQTT test:")
+    """Manual MQTT test"""
+    logging.info("🔍 Manual MQTT test:")
     
     try:
         import paho.mqtt.client as mqtt
         
         def on_connect(client, userdata, flags, rc):
             if rc == 0:
-                logging.info("✅ MQTT: Připojení úspěšné")
+                logging.info("✅ MQTT: Connection successful")
                 client.disconnect()
             else:
-                logging.error(f"❌ MQTT: Připojení selhalo (kód: {rc})")
+                logging.error(f"❌ MQTT: Connection failed (code: {rc})")
         
         client = mqtt.Client()
         client.on_connect = on_connect
         
-        # Test bez autentifikace
-        logging.info("   Testování bez autentifikace...")
+        # Test without authentication
+        logging.info("   Testing without authentication...")
         try:
             client.connect('core-mosquitto', 1883, 10)
             client.loop_start()
@@ -116,13 +116,13 @@ def check_mqtt_manual():
             logging.error(f"❌ MQTT test: {e}")
             
     except ImportError:
-        logging.error("❌ paho-mqtt knihovna není dostupná")
+        logging.error("❌ paho-mqtt library is not available")
 
 def main():
-    """Hlavní diagnostická funkce"""
+    """Main diagnostic function"""
     setup_logging()
     
-    logging.info("🔍 Battery Monitor - Diagnostika")
+    logging.info("🔍 Battery Monitor - Diagnostics")
     logging.info("=" * 50)
     
     check_environment()
@@ -136,7 +136,7 @@ def main():
     
     check_mqtt_manual()
     logging.info("=" * 50)
-    logging.info("✅ Diagnostika dokončena")
+    logging.info("✅ Diagnostics completed")
 
 if __name__ == "__main__":
     main()

@@ -42,14 +42,14 @@ class BMSParser:
         data = {}
         ptr = 0
 
-        # 1. Hlavička a délka
+        # 1. Header and length
         data["ver_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
         data["adr_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
         data["cid1_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
-        data["rtn_code_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2 # Návratový kód (00 = OK)
+        data["rtn_code_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2 # Return code (00 = OK)
 
         length_field_hex = hex_data_string[ptr:ptr+4]; ptr += 4
-        # LSB 12 bitů (3 hex znaky) pro délku INFO v znacích (nibblech)
+        # LSB 12 bits (3 hex characters) for INFO length in characters (nibbles)
         info_len_chars = BMSParser._hex_to_int(length_field_hex[1:])
         data["length_field"] = {
             "hex": length_field_hex,
@@ -58,86 +58,86 @@ class BMSParser:
             "len_checksum_nibble_hex": length_field_hex[0]
         }
 
-        # Kontrola celkové očekávané délky
-        # Délka = hlavička_bez_len(8) + len(4) + info_len_chars + checksum(4)
+        # Check total expected length
+        # Length = header_without_len(8) + len(4) + info_len_chars + checksum(4)
         expected_total_len_chars = 8 + 4 + info_len_chars + 4
         if len(hex_data_string) != expected_total_len_chars:
             raise ValueError(
-                f"Nesoulad v očekávané délce. Hlavička indikuje INFO délku (znaků): {info_len_chars}. "
-                f"Očekávaná celková délka: {expected_total_len_chars}, Obdrženo: {len(hex_data_string)}"
+                f"Length mismatch. Header indicates INFO length (chars): {info_len_chars}. "
+                f"Expected total length: {expected_total_len_chars}, Received: {len(hex_data_string)}"
             )
 
-        # Extrahujeme INFO blok a Checksum
+        # Extract INFO block and Checksum
         info_hex_block = hex_data_string[ptr : ptr + info_len_chars]; ptr += info_len_chars
-        data["checksum_hex"] = hex_data_string[ptr : ptr + 4] # Poslední 4 znaky (2 bajty)
+        data["checksum_hex"] = hex_data_string[ptr : ptr + 4] # Last 4 characters (2 bytes)
 
-        # 2. Parsování INFO bloku (99 bajtů / 198 znaků v příkladu)
-        info_ptr = 0 # Ukazatel v rámci info_hex_block
+        # 2. Parse INFO block (99 bytes / 198 characters in example)
+        info_ptr = 0 # Pointer within info_hex_block
 
         def read_from_info(num_chars):
             nonlocal info_ptr
             if info_ptr + num_chars > len(info_hex_block):
-                raise ValueError(f"Pokus o čtení za hranice INFO bloku: potřeba {num_chars} z pozice {info_ptr} v bloku délky {len(info_hex_block)}")
+                raise ValueError(f"Attempt to read beyond INFO block boundaries: need {num_chars} from position {info_ptr} in block of length {len(info_hex_block)}")
             segment = info_hex_block[info_ptr : info_ptr + num_chars]
             info_ptr += num_chars
             return segment
 
-        # DATAFLAG (1 bajt)
+        # DATAFLAG (1 byte)
         data["data_flag_hex"] = read_from_info(2)
-        # TODO: Detailnější parsování bitů DATAFLAG podle dokumentace
+        # TODO: Detailed parsing of DATAFLAG bits according to documentation
 
-        # State of Charge (SOC) (2 bajty, /100)
+        # State of Charge (SOC) (2 bytes, /100)
         soc_hex = read_from_info(4)
         data["soc_percent"] = BMSParser._hex_to_int(soc_hex) / 100.0
 
-        # Pack voltage (2 bajty, /100)
+        # Pack voltage (2 bytes, /100)
         pack_voltage_hex = read_from_info(4)
         data["pack_voltage_v"] = BMSParser._hex_to_int(pack_voltage_hex) / 100.0
 
-        # Cell count (m) (1 bajt)
+        # Cell count (m) (1 byte)
         cell_count_hex = read_from_info(2)
         cell_count = BMSParser._hex_to_int(cell_count_hex)
         data["cell_count"] = cell_count
 
-        # Napětí článků (m * 2 bajty, /1000)
+        # Cell voltages (m * 2 bytes, /1000)
         data["cell_voltages_v"] = []
         for i in range(cell_count):
             cv_hex = read_from_info(4)
             data["cell_voltages_v"].append(BMSParser._hex_to_int(cv_hex) / 1000.0)
 
-        # Ambient temperature (ENV_TEMP) (2 bajty, signed, /10)
+        # Ambient temperature (ENV_TEMP) (2 bytes, signed, /10)
         data["ambient_temp_c"] = BMSParser._hex_to_signed_int(read_from_info(4)) / 10.0
 
-        # Pack average temperature (pack_TEMP) (2 bajty, signed, /10)
+        # Pack average temperature (pack_TEMP) (2 bytes, signed, /10)
         data["pack_avg_temp_c"] = BMSParser._hex_to_signed_int(read_from_info(4)) / 10.0
 
-        # MOS temperature (MOS_TEMP) (2 bajty, signed, /10)
+        # MOS temperature (MOS_TEMP) (2 bytes, signed, /10)
         data["mos_temp_c"] = BMSParser._hex_to_signed_int(read_from_info(4)) / 10.0
 
-        # TOT_TEMPs (n) - počet teplotních senzorů článků (1 bajt)
+        # TOT_TEMPs (n) - number of cell temperature sensors (1 byte)
         tot_temps_hex = read_from_info(2)
         tot_temps = BMSParser._hex_to_int(tot_temps_hex)
         data["temp_sensor_count"] = tot_temps
 
-        # Teploty článků (n * 2 bajty, signed, /10)
+        # Cell temperatures (n * 2 bytes, signed, /10)
         data["cell_temps_c"] = []
         for i in range(tot_temps):
             ct_hex = read_from_info(4)
             data["cell_temps_c"].append(BMSParser._hex_to_signed_int(ct_hex) / 10.0)
 
-        # Pack current (2 bajty, signed, /100)
+        # Pack current (2 bytes, signed, /100)
         pack_current_hex = read_from_info(4)
         data["pack_current_a"] = BMSParser._hex_to_signed_int(pack_current_hex) / 100.0
 
-        # Pack Internal Resistance (pack_inter_RES) (2 bajty, /10)
+        # Pack Internal Resistance (pack_inter_RES) (2 bytes, /10)
         pack_ir_hex = read_from_info(4)
-        data["pack_internal_resistance_mohm"] = BMSParser._hex_to_int(pack_ir_hex) / 10.0 # Předpoklad mOhm
+        data["pack_internal_resistance_mohm"] = BMSParser._hex_to_int(pack_ir_hex) / 10.0 # Assumption: mOhm
 
-        # State of Health (SOH) (2 bajty)
+        # State of Health (SOH) (2 bytes)
         soh_hex = read_from_info(4)
-        data["soh_percent"] = BMSParser._hex_to_int(soh_hex) # Dle README bez dělení
+        data["soh_percent"] = BMSParser._hex_to_int(soh_hex) # According to README without division
 
-        # User-defined number (user_custom) (1 bajt)
+        # User-defined number (user_custom) (1 byte)
         user_custom_hex = read_from_info(2)
         data["user_defined_number"] = BMSParser._hex_to_int(user_custom_hex)
 
@@ -149,50 +149,50 @@ class BMSParser:
         rem_cap_hex = read_from_info(4)
         data["remaining_capacity_ah"] = BMSParser._hex_to_int(rem_cap_hex) / 100.0
 
-        # Cycle count (2 bajty)
+        # Cycle count (2 bytes)
         cycle_count_hex = read_from_info(4)
         data["cycle_count"] = BMSParser._hex_to_int(cycle_count_hex)
 
-        # Statusové bity (15 polí po 2 bajtech = 30 bajtů)
-        # Prozatím jako hex, detailní parsování bitů by vyžadovalo více logiky
+        # Status bits (15 fields of 2 bytes each = 30 bytes)
+        # For now as hex, detailed bit parsing would require more logic
         status_fields_description = [
             "voltage_status", "current_status", "temperature_status", "alarm_status", "fet_status",
             "overvoltage_protection_status_low", "undervolt_protection_status_low",
             "overvoltage_alarm_status_low", "undervolt_alarm_status_low",
             "cell_balance_state_low", "cell_balance_state_high",
             "overvoltage_protection_status_high", "undervolt_protection_status_high",
-            "overvoltage_alarm_status_high", "undervolt_alarm_status_high" # Tyto jsou dle *** v README
+            "overvoltage_alarm_status_high", "undervolt_alarm_status_high" # These are according to *** in README
         ]
         data["status_flags_hex"] = {}
         for desc in status_fields_description:
             data["status_flags_hex"][desc] = read_from_info(4)
 
-        # Machine status list (1 bajt)
+        # Machine status list (1 byte)
         data["machine_status_list_hex"] = read_from_info(2)
-        # TODO: Detailní parsování bitů Machine status list podle dokumentace
+        # TODO: Detailed parsing of Machine status list bits according to documentation
 
-        # IO status list (2 bajty)
+        # IO status list (2 bytes)
         data["io_status_list_hex"] = read_from_info(4)
-        # TODO: Detailní parsování bitů IO status list podle dokumentace
+        # TODO: Detailed parsing of IO status list bits according to documentation
 
         if info_ptr != info_len_chars:
             raise ValueError(
-                f"Chyba při parsování INFO bloku. Očekáváno {info_len_chars} znaků, "
-                f"přečteno {info_ptr} znaků."
+                f"Error parsing INFO block. Expected {info_len_chars} characters, "
+                f"read {info_ptr} characters."
             )
 
         return data
 
 
-# Test funkce
+# Test function
 if __name__ == "__main__":
-    # Test s ukázkovými daty
+    # Test with sample data
     test_hex = "22014A00E0C60118FE14BC100CF40CF40CF00CF20CF30CF60D020CF50CF50CFF0CF50CF40CF80CF90CFA0CF000E600C800D20400C800C800C800C800000000006400294A1A6B003F000000000000000000230000000000000000000000000000000000000000000000D3EF"
     
     print("=== BMS Parser Test ===")
     try:
         result = BMSParser.parse_service_42_response(test_hex)
-        print("✅ Parsování úspěšné!")
+        print("✅ Parsing successful!")
         print(json.dumps(result, indent=2, ensure_ascii=False))
     except Exception as e:
-        print(f"❌ Chyba: {e}")
+        print(f"❌ Error: {e}")

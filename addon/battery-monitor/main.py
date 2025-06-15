@@ -91,7 +91,7 @@ def main():
             logging.info("✅ MQTT connection successful!")
             logging.info("📡 ===================================")
             
-            # Publikování Auto Discovery pro všechny baterie
+            # Publishing Auto Discovery for all batteries
             try:
                 battery_names = [bat.name for bat in enabled_batteries]
                 logging.info(f"📤 Publishing Auto Discovery for {len(battery_names)} batteries...")
@@ -109,7 +109,7 @@ def main():
         logging.warning("⚠️ Application will continue without MQTT")
     
     # Main monitoring loop
-    logging.info(f"🔄 Spouštění monitoring loop (interval: {config.read_interval}s)")
+    logging.info(f"🔄 Starting monitoring loop (interval: {config.read_interval}s)")
     
     cycle_count = 0
     while True:
@@ -117,14 +117,14 @@ def main():
             cycle_count += 1
             logging.info(f"📊 Cycle #{cycle_count}")
             
-            # Čtení dat ze všech baterií
-            logging.info("📤 Čtení dat ze všech baterií...")
+            # Reading data from all batteries
+            logging.info("📤 Reading data from all batteries...")
             all_data = battery_manager.get_all_data()
             
             if all_data:
-                logging.info(f"✅ Načtena data z {len(all_data)} baterií!")
+                logging.info(f"✅ Data loaded from {len(all_data)} batteries!")
                 
-                # Výpis shrnutí pro každou baterii
+                # Summary output for each battery
                 for battery_name, data in all_data.items():
                     if battery_name == "_virtual_battery":
                         logging.info(f"🏦 Virtual Battery: "
@@ -138,30 +138,30 @@ def main():
                                    f"Voltage {data.get('pack_voltage_v', 0):.2f}V, "
                                    f"Current {data.get('pack_current_a', 0):.2f}A")
                 
-                # Publikování do MQTT (jen pokud je připojeno)
+                # Publishing to MQTT (only if connected)
                 if mqtt_connected and mqtt:
                     try:
                         if mqtt.publish_all_battery_data(all_data):
-                            logging.info("📤 Data všech baterií publikována do MQTT")
+                            logging.info("📤 Data from all batteries published to MQTT")
                         else:
-                            logging.warning("⚠️ Selhalo publikování do MQTT")
-                            # Pokus o obnovení připojení
+                            logging.warning("⚠️ Failed to publish to MQTT")
+                            # Attempt to restore connection
                             if not mqtt.connected:
-                                logging.info("🔄 Pokus o obnovení MQTT připojení...")
+                                logging.info("🔄 Attempting to restore MQTT connection...")
                                 mqtt_connected = mqtt.connect(timeout=10, retries=1)
                     except Exception as e:
-                        logging.error(f"❌ Chyba při MQTT publikování: {e}")
+                        logging.error(f"❌ Error during MQTT publishing: {e}")
                 else:
-                    logging.info("📊 Data přečtena (MQTT nedostupné)")
+                    logging.info("📊 Data read (MQTT unavailable)")
                 
             else:
-                logging.warning("❌ Nebyla načtena žádná data z baterií")
+                logging.warning("❌ No data loaded from batteries")
             
             # Wait for next iteration
             time.sleep(config.read_interval)
             
         except KeyboardInterrupt:
-            logging.info("🛑 Monitoring zastaven uživatelem")
+            logging.info("🛑 Monitoring stopped by user")
             break
         except Exception as e:
             logging.error(f"Error in monitoring loop: {e}")
