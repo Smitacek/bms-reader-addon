@@ -26,7 +26,7 @@ def setup_logging(level: str = "INFO"):
 
 def main():
     """Main function with multi-battery support"""
-    print("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.0")
+    print("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.2")
     
     # Load configuration
     try:

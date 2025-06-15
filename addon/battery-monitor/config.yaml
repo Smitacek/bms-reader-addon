@@ -12,8 +12,6 @@ boot: manual
 stage: stable
 homeassistant: "2023.1.0"
 url: "https://github.com/Smitacek/bms-reader-addon"
-codenotary: "notary@home-assistant.io"
-webui: "http://[HOST]:[PORT:8089]"
 options:
   # Single battery mode (backward compatibility)
   bms_port: "/dev/ttyUSB0"
