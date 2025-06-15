@@ -42,13 +42,13 @@ LOG_LEVEL=$(get_config_value 'application.log_level' 'LOG_LEVEL' 'INFO')
 
 # Show configuration
 if command -v bashio::log.info &> /dev/null; then
-    bashio::log.info "Starting BMS Reader v1.1.3..."
+    bashio::log.info "Starting BMS Reader v1.1.4..."
     bashio::log.info "BMS Port: $BMS_PORT"
     bashio::log.info "MQTT Host: $MQTT_HOST"
     bashio::log.info "Device ID: $DEVICE_ID"
     bashio::log.info "Log Level: $LOG_LEVEL"
 else
-    echo "Starting BMS Reader v1.1.3..."
+    echo "Starting BMS Reader v1.1.4..."
     echo "BMS Port: $BMS_PORT"
     echo "MQTT Host: $MQTT_HOST"
     echo "Device ID: $DEVICE_ID"
