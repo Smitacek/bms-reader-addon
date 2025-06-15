@@ -1,13 +1,21 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
-Home Assistant Add-on repository for **Battery Monitor** - monitoring Daren BMS LiFePO4 batteries.
+Home Assistant Add-on repository for **Battery Monitor** - monitoring Daren BMS LiFePO4 batteries with **multi-battery support**.
 
 ## 🔋 Battery Monitor Add-on
 
 Advanced monitoring add-on for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.
+
+### 🆕 New in Version 1.1.0 - Multi-Battery Support
+
+- ✅ **Monitor up to 16 batteries** simultaneously
+- ✅ **Virtual Battery** - Aggregated data from all batteries in one entity  
+- ✅ **Flexible Configuration** - Different ports and addresses for each battery
+- ✅ **Individual Monitoring** - Each battery gets its own Home Assistant sensors
+- ✅ **Backward Compatibility** - Single battery configurations still work
 
 ### Features
 
@@ -31,13 +39,31 @@ Advanced monitoring add-on for Daren BMS batteries with automatic Home Assistant
    - Find "Battery Monitor" and click Install
 
 3. **Configure the Add-on:**
+
+   **Single Battery (Simple):**
    ```yaml
    bms_port: "/dev/ttyUSB0"
    bms_address: 1
    mqtt_host: "core-mosquitto"
    mqtt_port: 1883
-   mqtt_username: "your_username"  # if required
-   mqtt_password: "your_password"  # if required
+   read_interval: 30
+   ```
+
+   **Multi-Battery Setup:**
+   ```yaml
+   multi_battery_mode: true
+   batteries:
+     - port: "/dev/ttyUSB0"
+       address: 1
+       name: "Battery_1"
+       enabled: true
+     - port: "/dev/ttyUSB0"
+       address: 2
+       name: "Battery_2"
+       enabled: true
+   enable_virtual_battery: true
+   virtual_battery_name: "Battery Bank"
+   mqtt_host: "core-mosquitto"
    read_interval: 30
    ```
 
@@ -45,6 +71,7 @@ Advanced monitoring add-on for Daren BMS batteries with automatic Home Assistant
 
 ### Monitored Parameters
 
+#### Per Individual Battery
 - **Battery State of Charge (SOC)** - %
 - **Pack Voltage** - V
 - **Pack Current** - A (positive = charging, negative = discharging)
@@ -54,16 +81,95 @@ Advanced monitoring add-on for Daren BMS batteries with automatic Home Assistant
 - **Charge/Discharge Status**
 - **Protection Status** - Over/under voltage, current, temperature
 
+#### Virtual Battery (Aggregated from All Batteries)
+- **Average SOC** - Weighted average across all batteries
+- **Total Voltage** - Sum of all battery voltages
+- **Total Current** - Sum of all battery currents  
+- **Total Power** - Combined power output
+- **Total Capacity** - Sum of remaining capacity
+- **Battery Count** - Number of connected batteries
+
 ### Hardware Requirements
 
-- **Daren BMS** with Service 42 support
-- **RS485 to USB adapter** or direct serial connection
+- **Daren BMS** with Service 42 support (up to 16 units)
+- **RS485 to USB adapter(s)** or direct serial connection
 - **Home Assistant** with Mosquitto MQTT broker
 
 ### Supported Devices
 
 - `/dev/ttyUSB0`, `/dev/ttyUSB1` - USB serial adapters
 - `/dev/ttyAMA0` - Raspberry Pi hardware UART
+- **Multiple addresses** on same RS485 bus (1-255)
+
+### Use Cases
+
+- **Solar Energy Storage** - Monitor multiple battery banks
+- **Electric Vehicle Charging** - Track battery pack modules
+- **Backup Power Systems** - Multiple UPS battery monitoring  
+- **Large Scale Storage** - Industrial battery systems
+
+### Home Assistant Integration
+
+#### Individual Battery Sensors (per battery)
+```
+sensor.battery_1_soc
+sensor.battery_1_pack_voltage  
+sensor.battery_1_pack_current
+sensor.battery_1_power
+sensor.battery_1_temperature
+...
+```
+
+#### Virtual Battery Sensors (system overview)
+```
+sensor.battery_bank_soc              # Average SOC
+sensor.battery_bank_pack_voltage     # Total voltage
+sensor.battery_bank_pack_current     # Total current
+sensor.battery_bank_power            # Total power
+sensor.battery_bank_battery_count    # Number of batteries
+```
+
+### Configuration Examples
+
+#### Solar System with 4 Batteries
+```yaml
+multi_battery_mode: true
+batteries:
+  - port: "/dev/ttyUSB0"
+    address: 1
+    name: "Solar_Battery_1"
+  - port: "/dev/ttyUSB0"
+    address: 2
+    name: "Solar_Battery_2"
+  - port: "/dev/ttyUSB0"
+    address: 3
+    name: "Solar_Battery_3"
+  - port: "/dev/ttyUSB0"
+    address: 4
+    name: "Solar_Battery_4"
+enable_virtual_battery: true
+virtual_battery_name: "Solar Battery Bank"
+```
+
+#### Multiple RS485 Adapters
+```yaml
+multi_battery_mode: true
+batteries:
+  # First adapter
+  - port: "/dev/ttyUSB0"
+    address: 1
+    name: "Rack1_Battery1"
+  - port: "/dev/ttyUSB0"
+    address: 2
+    name: "Rack1_Battery2"
+  # Second adapter  
+  - port: "/dev/ttyUSB1"
+    address: 1
+    name: "Rack2_Battery1"
+  - port: "/dev/ttyUSB1"
+    address: 2
+    name: "Rack2_Battery2"
+```
 
 ### Troubleshooting
 
@@ -71,27 +177,15 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 1. **Check Add-on Logs** for detailed connection information
 2. **MQTT Connection Issues**: Verify Mosquitto broker is running and configured
-3. **BMS Communication**: Ensure correct baud rate (9600) and device address
+3. **BMS Communication**: Ensure correct baud rate (9600) and device addresses
 4. **Serial Port**: Verify device permissions and availability
-
-### Home Assistant Integration
-
-All sensors are automatically discovered in Home Assistant:
-
-- `sensor.bms_soc` - State of Charge
-- `sensor.bms_pack_voltage` - Pack Voltage  
-- `sensor.bms_pack_current` - Pack Current
-- `sensor.bms_remaining_capacity` - Remaining Capacity
-- `sensor.bms_temperature` - Temperature
-- `sensor.bms_cell_1_voltage` - Cell 1 Voltage
-- ... (additional cells as available)
+5. **Multi-Battery Issues**: Check individual battery wiring and addresses
 
 ### Version History
 
+- **v1.1.0** - Multi-battery support, virtual battery aggregation
 - **v1.0.4** - Enhanced MQTT connection handling, improved diagnostics
 - **v1.0.3** - Stable release with full Home Assistant integration
-- **v1.0.2** - Bug fixes and performance improvements
-- **v1.0.1** - Initial release
 
 ### Support
 
@@ -103,4 +197,4 @@ This project is licensed under the MIT License.
 
 ---
 
-**Note:** This add-on is specifically designed for Daren BMS systems. For other BMS types, modifications may be required.
+**Perfect for monitoring large battery systems, solar installations, and professional setups with multiple batteries!** 🔋⚡

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Battery Monitor Add-on for Home Assistant
-Simplified version with clean configuration
+Multi-battery support with virtual battery aggregation
 """
 
 import sys
@@ -9,9 +9,8 @@ import time
 import logging
 from typing import Dict, Any
 
-from modbus import request_device_info
-from bms_parser import BMSParser
-from mqtt_helper import MQTTPublisher
+from multi_battery import MultiBatteryManager
+from mqtt_helper import MultiBatteryMQTTPublisher
 from addon_config import get_config
 
 
@@ -25,47 +24,14 @@ def setup_logging(level: str = "INFO"):
     )
 
 
-def read_bms_data(config) -> Dict[str, Any]:
-    """Read data from BMS"""
-    try:
-        device_info = request_device_info(
-            port=config.bms_port,
-            address=config.bms_address,
-            baudrate=config.bms_baudrate,
-            timeout=config.bms_timeout
-        )
-        
-        if device_info and len(device_info) >= 3:
-            parser = BMSParser()
-            
-            # Convert bytes to hex string if needed
-            if isinstance(device_info, bytes):
-                if device_info.startswith(b'~') and device_info.endswith(b'\r'):
-                    hex_data = device_info[1:-1].decode('ascii', errors='ignore')
-                else:
-                    hex_data = device_info.hex()
-            else:
-                hex_data = device_info
-                
-            parsed_data = parser.parse_service_42_response(hex_data)
-            return parsed_data
-        else:
-            logging.warning("No valid data received from BMS")
-            return {}
-            
-    except Exception as e:
-        logging.error(f"Error reading BMS data: {e}")
-        return {}
-
-
 def main():
-    """Main function"""
-    print("🔋 Battery Monitor Add-on - Version 1.0.0")
+    """Main function with multi-battery support"""
+    print("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.0")
     
     # Load configuration
     try:
         config = get_config()
-        logging.info("Loading configuration from Home Assistant options")
+        logging.info("Loading multi-battery configuration from Home Assistant options")
     except Exception as e:
         logging.error(f"Failed to load configuration: {e}")
         return 1
@@ -73,18 +39,32 @@ def main():
     # Setup logging
     setup_logging(config.log_level)
     
-    # Log configuration
-    logging.info(f"BMS Port: {config.bms_port}")
-    logging.info(f"BMS Address: {config.bms_address}")
-    logging.info(f"MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
-    logging.info(f"Read Interval: {config.read_interval}s")
+    # Log configuration summary
+    enabled_batteries = config.get_enabled_batteries()
+    logging.info(f"🔧 Configuration loaded:")
+    logging.info(f"   Multi-battery mode: {'Yes' if config.multi_battery_mode else 'No'}")
+    logging.info(f"   Enabled batteries: {len(enabled_batteries)}")
+    logging.info(f"   Virtual battery: {'Yes' if config.enable_virtual_battery else 'No'}")
+    logging.info(f"   MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
+    logging.info(f"   Read Interval: {config.read_interval}s")
+    
+    # Initialize multi-battery manager
+    try:
+        battery_manager = MultiBatteryManager(
+            batteries=enabled_batteries,
+            enable_virtual=config.enable_virtual_battery
+        )
+        logging.info(f"✅ Multi-battery manager initialized")
+    except Exception as e:
+        logging.error(f"❌ Failed to initialize battery manager: {e}")
+        return 1
     
     # Initialize MQTT
     mqtt = None
     mqtt_connected = False
     
     try:
-        mqtt = MQTTPublisher()
+        mqtt = MultiBatteryMQTTPublisher()
         
         # Pokus o připojení k MQTT s retry
         logging.info("🔌 Inicializace MQTT připojení...")
@@ -92,9 +72,12 @@ def main():
         
         if mqtt_connected:
             logging.info("✅ MQTT připojení úspěšné!")
+            
+            # Publikování Auto Discovery pro všechny baterie
             try:
-                mqtt.publish_discovery_config()
-                logging.info("✅ Home Assistant Auto Discovery config publikován")
+                battery_names = [bat.name for bat in enabled_batteries]
+                mqtt.publish_multi_battery_discovery(battery_names)
+                logging.info("✅ Home Assistant Auto Discovery config publikován pro všechny baterie")
             except Exception as e:
                 logging.warning(f"⚠️ Chyba při publikování discovery config: {e}")
         else:
@@ -105,7 +88,7 @@ def main():
         logging.warning("⚠️ Aplikace bude pokračovat bez MQTT")
     
     # Main monitoring loop
-    logging.info(f"Starting monitoring loop (interval: {config.read_interval}s)")
+    logging.info(f"🔄 Spouštění monitoring loop (interval: {config.read_interval}s)")
     
     cycle_count = 0
     while True:
@@ -113,18 +96,32 @@ def main():
             cycle_count += 1
             logging.info(f"📊 Cycle #{cycle_count}")
             
-            # Read BMS data
-            logging.info("📤 Communicating with BMS...")
-            data = read_bms_data(config)
+            # Čtení dat ze všech baterií
+            logging.info("📤 Čtení dat ze všech baterií...")
+            all_data = battery_manager.get_all_data()
             
-            if data:
-                logging.info("✅ Communication completed!")
+            if all_data:
+                logging.info(f"✅ Načtena data z {len(all_data)} baterií!")
+                
+                # Výpis shrnutí pro každou baterii
+                for battery_name, data in all_data.items():
+                    if battery_name == "_virtual_battery":
+                        logging.info(f"🏦 Virtual Battery: "
+                                   f"SOC {data.get('soc_percent', 0):.1f}%, "
+                                   f"Voltage {data.get('pack_voltage_v', 0):.2f}V, "
+                                   f"Current {data.get('pack_current_a', 0):.2f}A, "
+                                   f"Batteries: {data.get('battery_count', 0)}")
+                    else:
+                        logging.info(f"🔋 {battery_name}: "
+                                   f"SOC {data.get('soc_percent', 0):.1f}%, "
+                                   f"Voltage {data.get('pack_voltage_v', 0):.2f}V, "
+                                   f"Current {data.get('pack_current_a', 0):.2f}A")
                 
                 # Publikování do MQTT (jen pokud je připojeno)
                 if mqtt_connected and mqtt:
                     try:
-                        if mqtt.publish_bms_data(data):
-                            logging.info("📤 BMS data publikována do MQTT")
+                        if mqtt.publish_all_battery_data(all_data):
+                            logging.info("📤 Data všech baterií publikována do MQTT")
                         else:
                             logging.warning("⚠️ Selhalo publikování do MQTT")
                             # Pokus o obnovení připojení
@@ -136,19 +133,14 @@ def main():
                 else:
                     logging.info("📊 Data přečtena (MQTT nedostupné)")
                 
-                # Výpis shrnutí
-                soc = data.get('soc_percent', 0)
-                voltage = data.get('pack_voltage_v', 0)
-                current = data.get('pack_current_a', 0)
-                logging.info(f"📊 SOC: {soc}%, Voltage: {voltage}V, Current: {current}A")
             else:
-                logging.warning("❌ No valid BMS data received")
+                logging.warning("❌ Nebyla načtena žádná data z baterií")
             
             # Wait for next iteration
             time.sleep(config.read_interval)
             
         except KeyboardInterrupt:
-            logging.info("🛑 Monitoring stopped by user")
+            logging.info("🛑 Monitoring zastaven uživatelem")
             break
         except Exception as e:
             logging.error(f"Error in monitoring loop: {e}")

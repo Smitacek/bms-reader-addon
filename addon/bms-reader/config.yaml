@@ -1,0 +1,66 @@
+name: Battery Monitor
+version: "1.0.6"
+slug: battery-monitor
+description: "Daren BMS Reader for LiFePO4 batteries with MQTT integration - Service 42 protocol"
+url: "https://github.com/Smitacek/bms-reader-addon"
+arch:
+  - armhf    
+  - aarch64  
+  - amd64
+init: false
+startup: application
+boot: auto
+stage: stable
+homeassistant: "2023.1.0"
+options:
+  bms:
+    port: "/dev/ttyUSB0"
+    address: 1
+    baudrate: 9600
+    timeout: 2.0
+  device:
+    name: "BMS LiFePO4 Battery"
+    id: "bms_lifepo4_01"
+    manufacturer: "Daren"
+    model: "Daren BMS"
+  mqtt:
+    host: "core-mosquitto"
+    port: 1883
+    username: ""
+    password: ""
+    discovery_prefix: "homeassistant"
+  application:
+    read_interval: 30
+    log_level: "INFO"
+schema:
+  bms:
+    port: str
+    address: int(1,255)
+    baudrate: int
+    timeout: float(0.1,10.0)
+  device:
+    name: str
+    id: match(^[a-zA-Z0-9_]+$)
+    manufacturer: str?
+    model: str?
+  mqtt:
+    host: str
+    port: port
+    username: str?
+    password: password?
+    discovery_prefix: str?
+  application:
+    read_interval: int(5,300)
+    log_level: str
+services:
+  - mqtt:mosquitto
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyUSB2
+  - /dev/ttyAMA0
+  - /dev/ttyACM0
+  - /dev/ttyACM1
+  - /dev/serial
+uart: true
+udev: true

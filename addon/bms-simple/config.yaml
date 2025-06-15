@@ -1,0 +1,10 @@
+name: "BMS Simple"
+version: "1.0.0"
+slug: "bms-simple"
+description: "Simple BMS monitoring add-on"
+arch:
+  - armhf
+  - aarch64
+  - amd64
+startup: application
+boot: manual
