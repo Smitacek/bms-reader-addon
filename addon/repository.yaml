@@ -1,3 +1,4 @@
 name: "BMS Reader Add-ons Repository"
 url: "https://github.com/Smitacek/bms-reader-addon"
 maintainer: "Smitacek"
+description: "Advanced BMS monitoring for LiFePO4 batteries with multi-battery support"
