@@ -187,6 +187,9 @@ class MultiBatteryManager:
                 parsed_data['battery_address'] = battery.address
                 parsed_data['battery_port'] = battery.port
                 
+                # Enhance data with calculated values for MQTT compatibility
+                self._enhance_battery_data(parsed_data)
+                
                 return parsed_data
             else:
                 logger.warning(f"Invalid data length from {battery.name}")
@@ -220,3 +223,49 @@ class MultiBatteryManager:
                 battery_data['_virtual_battery'] = virtual_data
         
         return battery_data
+    
+    def _enhance_battery_data(self, data: Dict[str, Any]):
+        """Enhance parsed BMS data with calculated values for MQTT compatibility"""
+        # Calculate power (Voltage * Current)
+        if 'pack_voltage_v' in data and 'pack_current_a' in data:
+            data['power_w'] = data['pack_voltage_v'] * data['pack_current_a']
+        
+        # Map temperature data (BMS parser provides different temperature keys)
+        if 'ambient_temp_c' in data:
+            data['temperature_1_c'] = data['ambient_temp_c']
+        elif 'pack_avg_temp_c' in data:
+            data['temperature_1_c'] = data['pack_avg_temp_c']
+        elif 'mos_temp_c' in data:
+            data['temperature_1_c'] = data['mos_temp_c']
+        else:
+            data['temperature_1_c'] = 20.0  # Default value
+        
+        # Map capacity fields to match MQTT expectations
+        if 'full_charge_capacity_ah' in data:
+            data['full_capacity_ah'] = data['full_charge_capacity_ah']
+        
+        # Calculate cell voltage statistics
+        if 'cell_voltages_v' in data and data['cell_voltages_v']:
+            cell_voltages = data['cell_voltages_v']
+            data['min_cell_voltage_v'] = min(cell_voltages)
+            data['max_cell_voltage_v'] = max(cell_voltages)
+            data['cell_voltage_diff_v'] = data['max_cell_voltage_v'] - data['min_cell_voltage_v']
+        else:
+            data['min_cell_voltage_v'] = 0.0
+            data['max_cell_voltage_v'] = 0.0
+            data['cell_voltage_diff_v'] = 0.0
+        
+        # Determine status based on current
+        current = data.get('pack_current_a', 0)
+        if current > 0.1:
+            data['status'] = 'charging'
+        elif current < -0.1:
+            data['status'] = 'discharging'
+        else:
+            data['status'] = 'idle'
+        
+        # Debug logging
+        logger.debug(f"Enhanced data keys: {list(data.keys())}")
+        logger.debug(f"Power: {data.get('power_w', 'missing')}, Temperature: {data.get('temperature_1_c', 'missing')}")
+        logger.debug(f"Min/Max cell voltage: {data.get('min_cell_voltage_v', 'missing')}/{data.get('max_cell_voltage_v', 'missing')}")
+        logger.debug(f"Status: {data.get('status', 'missing')}")
