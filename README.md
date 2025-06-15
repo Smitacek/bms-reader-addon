@@ -1,9 +1,27 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.2-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
-Home Assistant Add-on repository for **Battery Monitor** - monitoring Daren BMS LiFePO4 batteries with **multi-battery support**.
+Home Assistant Add-on repository for **Battery Monitor Multi** - monitoring Daren BMS LiFePO4 batteries with **multi-battery support**.
+
+## 🆕 Latest: Battery Monitor Multi v1.1.2
+
+**Advanced multi-battery monitoring with virtual battery aggregation**
+
+### Key Features:
+- ✅ **Monitor up to 16 batteries** simultaneously
+- ✅ **Virtual Battery** - Aggregated data from all batteries in one entity  
+- ✅ **Individual Monitoring** - Each battery gets its own Home Assistant sensors
+- ✅ **Flexible Configuration** - Different ports and addresses for each battery
+- ✅ **Backward Compatibility** - Single battery configurations still work
+
+### Installation:
+1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
+2. **Install:** "Battery Monitor Multi" v1.1.2
+3. **Configure:** Multi-battery setup or single battery (backward compatible)
+
+---
 
 ## 🔋 Battery Monitor Add-on
 
@@ -183,6 +201,7 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 ### Version History
 
+- **v1.1.2** - Improved documentation and installation instructions
 - **v1.1.0** - Multi-battery support, virtual battery aggregation
 - **v1.0.4** - Enhanced MQTT connection handling, improved diagnostics
 - **v1.0.3** - Stable release with full Home Assistant integration
