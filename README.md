@@ -2,48 +2,52 @@
 
 ![Version](https://img.shields.io/badge/version-1.1.4-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-Home Assistant Add-on repository for **Battery Monitor Multi** - monitoring Daren BMS LiFePO4 batteries with **multi-battery support**.
+🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
 ## 🆕 Latest: Battery Monitor Multi v1.1.4
 
-**Advanced multi-battery monitoring with virtual battery aggregation**
+**Production-ready multi-battery monitoring with enhanced logging and diagnostics**
 
-### Key Features:
-- ✅ **Monitor up to 16 batteries** simultaneously
-- ✅ **Virtual Battery** - Aggregated data from all batteries in one entity  
-- ✅ **Individual Monitoring** - Each battery gets its own Home Assistant sensors
-- ✅ **Flexible Configuration** - Different ports and addresses for each battery
-- ✅ **Backward Compatibility** - Single battery configurations still work
+### ✨ Key Features:
+- 🔋 **Monitor up to 16 batteries** simultaneously with individual configuration
+- 🏦 **Virtual Battery** - Smart aggregation of all batteries into a unified entity  
+- 📊 **Individual Monitoring** - Each battery gets dedicated Home Assistant sensors
+- ⚙️ **Flexible Configuration** - Different ports, addresses, and names per battery
+- 🔄 **Backward Compatibility** - Single battery setups work without changes
+- 🔍 **Enhanced Logging** - Detailed startup and runtime diagnostics
+- 📡 **Auto Discovery** - Seamless Home Assistant integration via MQTT
 
-### Installation:
+### 🚀 Quick Start:
 1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
-2. **Install:** "Battery Monitor Multi" v1.1.4
-3. **Configure:** Multi-battery setup or single battery (backward compatible)
+2. **Install:** "Battery Monitor Multi" v1.1.4 (slug: `battery-monitor-v2`)
+3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
 ---
 
 ## 🔋 Battery Monitor Add-on
 
-Advanced monitoring add-on for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.
+**Advanced monitoring system for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.**
 
-### 🆕 New in Version 1.1.0 - Multi-Battery Support
+### 🆕 New in Version 1.1.4 - Enhanced Logging & Diagnostics
 
-- ✅ **Monitor up to 16 batteries** simultaneously
-- ✅ **Virtual Battery** - Aggregated data from all batteries in one entity  
-- ✅ **Flexible Configuration** - Different ports and addresses for each battery
-- ✅ **Individual Monitoring** - Each battery gets its own Home Assistant sensors
-- ✅ **Backward Compatibility** - Single battery configurations still work
+- ✅ **Enhanced Startup Logging** - Detailed battery configuration display
+- ✅ **Real-time Battery Status** - Power, temperature, and status monitoring
+- ✅ **Improved Error Handling** - Better diagnostics and troubleshooting
+- ✅ **Virtual Battery Aggregation** - Smart multi-battery data consolidation
+- ✅ **Code Refactoring** - Cleaner, more maintainable codebase
 
 ### Features
 
-- ✅ **Daren BMS Support** - Service 42 protocol compatibility
-- ✅ **MQTT Auto Discovery** - Automatic integration with Home Assistant
-- ✅ **Real-time Monitoring** - Configurable read intervals (10-300 seconds)
-- ✅ **LiFePO4 Optimized** - Designed specifically for LiFePO4 battery systems
-- ✅ **Multi-architecture** - Supports ARM64, AMD64, ARMv7
-- ✅ **Robust Connection** - Advanced MQTT connection handling with retry logic
-- ✅ **Comprehensive Diagnostics** - Built-in troubleshooting tools
+- 🔋 **Daren BMS Support** - Service 42 protocol compatibility
+- 📡 **MQTT Auto Discovery** - Automatic integration with Home Assistant
+- ⏱️ **Real-time Monitoring** - Configurable read intervals (10-300 seconds)
+- 🔋 **LiFePO4 Optimized** - Designed specifically for LiFePO4 battery systems
+- 🏗️ **Multi-architecture** - Supports ARM64, AMD64, ARMv7
+- 🔗 **Robust Connection** - Advanced MQTT connection handling with retry logic
+- 🔍 **Comprehensive Diagnostics** - Built-in troubleshooting tools
+- 📊 **Enhanced Logging** - Detailed startup and runtime information
 
 ### Installation
 

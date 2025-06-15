@@ -25,28 +25,39 @@ def setup_logging(level: str = "INFO"):
 
 
 def main():
-    """Main function with multi-battery support"""
+    """Main function with enhanced multi-battery support and logging"""
     print("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.4")
+    print("🚀 Starting initialization...")
     
     # Load configuration
     try:
         config = get_config()
-        logging.info("Loading multi-battery configuration from Home Assistant options")
+        print("✅ Configuration loaded successfully")
     except Exception as e:
-        logging.error(f"Failed to load configuration: {e}")
+        print(f"❌ Failed to load configuration: {e}")
         return 1
     
     # Setup logging
     setup_logging(config.log_level)
     
-    # Log configuration summary
+    # Enhanced startup logging
+    logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
+    logging.info(f"📊 Battery Monitor Multi v1.1.4")
+    logging.info(f"🕐 Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    logging.info(f"📝 Log level: {config.log_level}")
+    
+    # Log configuration summary with more details
     enabled_batteries = config.get_enabled_batteries()
-    logging.info(f"🔧 Configuration loaded:")
-    logging.info(f"   Multi-battery mode: {'Yes' if config.multi_battery_mode else 'No'}")
-    logging.info(f"   Enabled batteries: {len(enabled_batteries)}")
-    logging.info(f"   Virtual battery: {'Yes' if config.enable_virtual_battery else 'No'}")
-    logging.info(f"   MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
-    logging.info(f"   Read Interval: {config.read_interval}s")
+    logging.info(f"🔧 ======== CONFIGURATION SUMMARY ========")
+    logging.info(f"   🔋 Multi-battery mode: {'✅ ENABLED' if config.multi_battery_mode else '❌ DISABLED'}")
+    logging.info(f"   📊 Total configured batteries: {len(config.batteries) if config.multi_battery_mode else 1}")
+    logging.info(f"   ✅ Enabled batteries: {len(enabled_batteries)}")
+    logging.info(f"   🏦 Virtual battery: {'✅ ENABLED' if config.enable_virtual_battery else '❌ DISABLED'}")
+    if config.enable_virtual_battery:
+        logging.info(f"   📛 Virtual battery name: '{config.virtual_battery_name}'")
+    logging.info(f"   📡 MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
+    logging.info(f"   ⏱️  Read Interval: {config.read_interval}s")
+    logging.info(f"🔧 =======================================")
     
     # Initialize multi-battery manager
     try:
@@ -59,33 +70,43 @@ def main():
         logging.error(f"❌ Failed to initialize battery manager: {e}")
         return 1
     
-    # Initialize MQTT
+    # Initialize MQTT with enhanced logging
     mqtt = None
     mqtt_connected = False
     
     try:
+        logging.info("📡 ======== MQTT INITIALIZATION ========")
         mqtt = MultiBatteryMQTTPublisher()
         
-        # Pokus o připojení k MQTT s retry
-        logging.info("🔌 Inicializace MQTT připojení...")
+        # MQTT connection attempt with detailed logging
+        logging.info(f"🔌 Connecting to MQTT broker: {config.mqtt_host}:{config.mqtt_port}")
+        if config.mqtt_username:
+            logging.info(f"👤 Using authentication for user: {config.mqtt_username}")
+        else:
+            logging.info("🔓 Connecting without authentication")
+            
         mqtt_connected = mqtt.connect(timeout=15, retries=3)
         
         if mqtt_connected:
-            logging.info("✅ MQTT připojení úspěšné!")
+            logging.info("✅ MQTT connection successful!")
+            logging.info("📡 ===================================")
             
             # Publikování Auto Discovery pro všechny baterie
             try:
                 battery_names = [bat.name for bat in enabled_batteries]
+                logging.info(f"📤 Publishing Auto Discovery for {len(battery_names)} batteries...")
+                
                 mqtt.publish_multi_battery_discovery(battery_names)
-                logging.info("✅ Home Assistant Auto Discovery config publikován pro všechny baterie")
+                logging.info("✅ Home Assistant Auto Discovery config published for all batteries")
             except Exception as e:
-                logging.warning(f"⚠️ Chyba při publikování discovery config: {e}")
+                logging.warning(f"⚠️ Error publishing discovery config: {e}")
         else:
-            logging.warning("⚠️ MQTT připojení selhalo - aplikace bude pokračovat bez MQTT")
+            logging.warning("⚠️ MQTT connection failed - application will continue without MQTT")
+            logging.info("📡 ===================================")
             
     except Exception as e:
-        logging.error(f"❌ MQTT inicializace selhala: {e}")
-        logging.warning("⚠️ Aplikace bude pokračovat bez MQTT")
+        logging.error(f"❌ MQTT initialization failed: {e}")
+        logging.warning("⚠️ Application will continue without MQTT")
     
     # Main monitoring loop
     logging.info(f"🔄 Spouštění monitoring loop (interval: {config.read_interval}s)")

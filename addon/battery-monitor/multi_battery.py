@@ -126,15 +126,23 @@ class MultiBatteryManager:
         self.virtual_battery = VirtualBattery() if enable_virtual else None
         self.parser = BMSParser()
         
-    def read_all_batteries(self) -> Dict[str, Dict[str, Any]]:
-        """Read data from all enabled batteries"""
-        results = {}
+        # Log battery configuration on startup
+        self._log_battery_configuration()
         
-        logger.info(f"📊 Reading data from {len(self.batteries)} batteries...")
+    def read_all_batteries(self) -> Dict[str, Dict[str, Any]]:
+        """Read data from all enabled batteries with detailed logging"""
+        results = {}
+        enabled_batteries = [b for b in self.batteries if b.enabled]
+        
+        logger.info(f"📊 ===== BATTERY READING CYCLE =====")
+        logger.info(f"🔄 Reading data from {len(enabled_batteries)} enabled batteries...")
+        
+        successful_reads = 0
+        failed_reads = 0
         
         for battery in self.batteries:
             if not battery.enabled:
-                logger.debug(f"Skipping disabled battery: {battery.name}")
+                logger.debug(f"⏭️  Skipping disabled battery: {battery.name}")
                 continue
                 
             logger.info(f"📤 Reading {battery.name} (Port: {battery.port}, Address: {battery.address})")
@@ -143,21 +151,39 @@ class MultiBatteryManager:
                 data = self._read_single_battery(battery)
                 if data:
                     results[battery.name] = data
-                    logger.info(f"✅ {battery.name}: SOC {data.get('soc_percent', 0)}%, "
-                              f"Voltage {data.get('pack_voltage_v', 0):.2f}V, "
-                              f"Current {data.get('pack_current_a', 0):.2f}A")
+                    successful_reads += 1
+                    
+                    # Enhanced logging with more details
+                    soc = data.get('soc_percent', 0)
+                    voltage = data.get('pack_voltage_v', 0)
+                    current = data.get('pack_current_a', 0)
+                    power = data.get('power_w', 0)
+                    temp = data.get('temperature_1_c', 0)
+                    status = data.get('status', 'unknown')
+                    
+                    logger.info(f"✅ {battery.name}: SOC {soc:.1f}%, "
+                              f"Voltage {voltage:.2f}V, Current {current:.2f}A, "
+                              f"Power {power:.1f}W, Temp {temp:.1f}°C, Status: {status}")
                     
                     # Add to virtual battery
                     if self.virtual_battery:
                         self.virtual_battery.add_battery_data(battery.name, data)
                 else:
+                    failed_reads += 1
                     logger.warning(f"❌ No data received from {battery.name}")
                     
             except Exception as e:
+                failed_reads += 1
                 logger.error(f"❌ Error reading {battery.name}: {e}")
                 continue
         
-        logger.info(f"📊 Successfully read {len(results)} out of {len([b for b in self.batteries if b.enabled])} batteries")
+        # Summary logging
+        logger.info(f"📊 ===== READING SUMMARY =====")
+        logger.info(f"✅ Successful reads: {successful_reads}/{len(enabled_batteries)}")
+        if failed_reads > 0:
+            logger.warning(f"❌ Failed reads: {failed_reads}")
+        logger.info(f"🔋 ===========================")
+        
         return results
     
     def _read_single_battery(self, battery: BatteryConfig) -> Optional[Dict[str, Any]]:
@@ -200,7 +226,7 @@ class MultiBatteryManager:
             return None
     
     def get_virtual_battery_data(self) -> Optional[Dict[str, Any]]:
-        """Get aggregated virtual battery data"""
+        """Get aggregated virtual battery data with detailed logging"""
         if not self.virtual_battery:
             return None
             
@@ -208,6 +234,15 @@ class MultiBatteryManager:
         if aggregated:
             aggregated['device_name'] = self.virtual_battery.name
             aggregated['is_virtual'] = True
+            
+            # Log virtual battery summary
+            logger.info(f"🏦 Virtual Battery '{self.virtual_battery.name}':")
+            logger.info(f"   📊 Aggregated from {aggregated.get('battery_count', 0)} batteries")
+            logger.info(f"   🔋 SOC: {aggregated.get('soc_percent', 0):.1f}%")
+            logger.info(f"   ⚡ Total Voltage: {aggregated.get('pack_voltage_v', 0):.2f}V")
+            logger.info(f"   🔌 Total Current: {aggregated.get('pack_current_a', 0):.2f}A")
+            logger.info(f"   💪 Total Power: {aggregated.get('power_w', 0):.1f}W")
+            logger.info(f"   🌡️  Avg Temperature: {aggregated.get('temperature_1_c', 0):.1f}°C")
             
         return aggregated
     
@@ -224,29 +259,58 @@ class MultiBatteryManager:
         
         return battery_data
     
-    def _enhance_battery_data(self, data: Dict[str, Any]):
+    def _log_battery_configuration(self):
+        """Log detailed battery configuration on startup"""
+        logger.info("🔋 ===== BATTERY CONFIGURATION =====")
+        logger.info(f"📊 Total configured batteries: {len(self.batteries)}")
+        logger.info(f"🔗 Virtual battery enabled: {'Yes' if self.enable_virtual else 'No'}")
+        
+        enabled_count = sum(1 for b in self.batteries if b.enabled)
+        disabled_count = len(self.batteries) - enabled_count
+        
+        logger.info(f"✅ Enabled batteries: {enabled_count}")
+        if disabled_count > 0:
+            logger.info(f"❌ Disabled batteries: {disabled_count}")
+        
+        logger.info("📋 Battery Details:")
+        for i, battery in enumerate(self.batteries, 1):
+            status = "✅ ENABLED" if battery.enabled else "❌ DISABLED"
+            logger.info(f"   {i}. {battery.name}")
+            logger.info(f"      Port: {battery.port}")
+            logger.info(f"      Address: {battery.address}")
+            logger.info(f"      Status: {status}")
+            logger.info(f"      Timeout: {battery.timeout}s")
+            logger.info(f"      Baudrate: {battery.baudrate}")
+        
+        logger.info("🔋 =================================")
+    
+    def _enhance_battery_data(self, data: Dict[str, Any]) -> None:
         """Enhance parsed BMS data with calculated values for MQTT compatibility"""
+        battery_name = data.get('battery_name', 'Unknown')
+        
         # Calculate power (Voltage * Current)
-        if 'pack_voltage_v' in data and 'pack_current_a' in data:
-            data['power_w'] = data['pack_voltage_v'] * data['pack_current_a']
+        voltage = data.get('pack_voltage_v', 0)
+        current = data.get('pack_current_a', 0)
+        data['power_w'] = voltage * current
         
         # Map temperature data (BMS parser provides different temperature keys)
+        temperature = None
         if 'ambient_temp_c' in data:
-            data['temperature_1_c'] = data['ambient_temp_c']
+            temperature = data['ambient_temp_c']
         elif 'pack_avg_temp_c' in data:
-            data['temperature_1_c'] = data['pack_avg_temp_c']
+            temperature = data['pack_avg_temp_c']
         elif 'mos_temp_c' in data:
-            data['temperature_1_c'] = data['mos_temp_c']
-        else:
-            data['temperature_1_c'] = 20.0  # Default value
+            temperature = data['mos_temp_c']
+        
+        data['temperature_1_c'] = temperature if temperature is not None else 20.0
         
         # Map capacity fields to match MQTT expectations
         if 'full_charge_capacity_ah' in data:
             data['full_capacity_ah'] = data['full_charge_capacity_ah']
         
         # Calculate cell voltage statistics
-        if 'cell_voltages_v' in data and data['cell_voltages_v']:
-            cell_voltages = data['cell_voltages_v']
+        cell_voltages = data.get('cell_voltages_v', [])
+        if cell_voltages and isinstance(cell_voltages, list) and len(cell_voltages) > 0:
             data['min_cell_voltage_v'] = min(cell_voltages)
             data['max_cell_voltage_v'] = max(cell_voltages)
             data['cell_voltage_diff_v'] = data['max_cell_voltage_v'] - data['min_cell_voltage_v']
@@ -256,7 +320,6 @@ class MultiBatteryManager:
             data['cell_voltage_diff_v'] = 0.0
         
         # Determine status based on current
-        current = data.get('pack_current_a', 0)
         if current > 0.1:
             data['status'] = 'charging'
         elif current < -0.1:
@@ -264,8 +327,10 @@ class MultiBatteryManager:
         else:
             data['status'] = 'idle'
         
-        # Debug logging
-        logger.debug(f"Enhanced data keys: {list(data.keys())}")
-        logger.debug(f"Power: {data.get('power_w', 'missing')}, Temperature: {data.get('temperature_1_c', 'missing')}")
-        logger.debug(f"Min/Max cell voltage: {data.get('min_cell_voltage_v', 'missing')}/{data.get('max_cell_voltage_v', 'missing')}")
-        logger.debug(f"Status: {data.get('status', 'missing')}")
+        # Debug logging for troubleshooting
+        logger.debug(f"📋 Enhanced data for {battery_name}:")
+        logger.debug(f"   Power: {data.get('power_w', 'N/A'):.1f}W")
+        logger.debug(f"   Temperature: {data.get('temperature_1_c', 'N/A'):.1f}°C")
+        logger.debug(f"   Cell voltages: {len(cell_voltages)} cells")
+        logger.debug(f"   Min/Max cell: {data.get('min_cell_voltage_v', 'N/A'):.3f}V / {data.get('max_cell_voltage_v', 'N/A'):.3f}V")
+        logger.debug(f"   Status: {data.get('status', 'N/A')}")

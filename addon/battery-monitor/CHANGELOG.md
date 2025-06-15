@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.1.4] - 2025-06-15
+
+### Added
+- Enhanced startup logging with detailed battery configuration display
+- Comprehensive battery reading cycle logging with success/failure tracking
+- Virtual battery summary logging with aggregated data display
+- Debug logging for individual battery data enhancement
+- Clean repository structure with removed legacy files
+
+### Changed
+- Refactored multi_battery.py with improved code structure and documentation
+- Enhanced error handling and logging throughout the codebase
+- Updated main.py with detailed initialization and MQTT connection logging
+- Improved README with better documentation and visual formatting
+- New unique slug: battery-monitor-v2 to avoid Home Assistant caching conflicts
+
+### Fixed
+- Resolved Home Assistant add-on caching issues with new slug
+- Better data mapping and sensor value calculations
+- Improved temperature sensor mapping from BMS data
+- Enhanced cell voltage statistics calculations
+
+### Removed
+- Legacy addon_config_old.py and mqtt_helper_old.py files
+- Python cache directories and temporary files
+
+## [1.1.3] - 2025-06-15
+
+### Fixed
+- Missing sensor values issue with enhanced data mapping
+- Temperature sensor mapping from ambient_temp_c to temperature_1_c
+- Power calculation (voltage × current) for individual batteries
+- Min/Max cell voltage calculations from cell_voltages_v array
+
 ## [1.1.2] - 2025-06-15
 
 ### Added
