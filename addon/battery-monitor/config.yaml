@@ -1,6 +1,6 @@
 name: "Battery Monitor Multi"
 version: "1.1.2"
-slug: "battery-monitor-multi"
+slug: "battery-monitor"
 description: "BMS Reader for LiFePO4 batteries with MQTT integration - Multi-battery support"
 arch:
   - armhf
