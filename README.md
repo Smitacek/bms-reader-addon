@@ -25,6 +25,14 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 2. **Install:** "Battery Monitor Multi" v1.1.6 (slug: `battery-monitor-v2`)
 3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
+### 🔌 Use Stable Serial Paths (by-id) on Home Assistant
+
+On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-plugs. Prefer the stable symlink from `/dev/serial/by-id`:
+
+- In Home Assistant: Settings → System → Hardware → All hardware → Serial.
+- Copy the full path like `/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH06XABC-if00-port0`.
+- Use this path in `bms_port` or per-battery `port`.
+
 ---
 
 ## 🔋 Battery Monitor Add-on
@@ -64,7 +72,8 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
    **Single Battery (Simple):**
    ```yaml
-   bms_port: "/dev/ttyUSB0"
+   # Prefer by-id path (stable across reboots)
+   bms_port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH06XABC-if00-port0"
    bms_address: 1
    mqtt_host: "core-mosquitto"
    mqtt_port: 1883
@@ -77,11 +86,11 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
    ```yaml
    multi_battery_mode: true
    batteries:
-     - port: "/dev/ttyUSB0"
+     - port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH06XABC-if00-port0"
        address: 1
        name: "Battery_1"
        enabled: true
-     - port: "/dev/ttyUSB0"
+     - port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH06XABC-if00-port0"
        address: 2
        name: "Battery_2"
        enabled: true
@@ -123,7 +132,8 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
 ### Supported Devices
 
-- `/dev/ttyUSB0`, `/dev/ttyUSB1` - USB serial adapters
+- `/dev/serial/by-id/...` - Recommended stable USB serial path
+- `/dev/ttyUSB0`, `/dev/ttyUSB1` - USB serial adapters (may change across reboots)
 - `/dev/ttyAMA0` - Raspberry Pi hardware UART
 - **Multiple addresses** on same RS485 bus (1-255)
 

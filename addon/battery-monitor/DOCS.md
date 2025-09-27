@@ -16,7 +16,7 @@ Battery Monitor Add-on enables reading data from BMS (Battery Management System)
 
 ### BMS Settings
 
-- **BMS Port**: Serial port for BMS communication (e.g. `/dev/ttyUSB0`)
+- **BMS Port**: Serial port for BMS communication. On Home Assistant, prefer the stable path under `/dev/serial/by-id` (e.g. `/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_XXXX-if00-port0`).
 - **BMS Address**: Modbus address of BMS device (usually 1)
 - **Read Interval**: Data reading interval in seconds (10-300s)
 
@@ -39,7 +39,8 @@ Battery Monitor Add-on enables reading data from BMS (Battery Management System)
 ### Example configuration
 
 ```yaml
-bms_port: "/dev/ttyUSB0"
+# Prefer by-id path for stability on HA
+bms_port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_XXXX-if00-port0"
 bms_address: 1
 mqtt_host: "core-mosquitto"
 mqtt_port: 1883
@@ -103,7 +104,7 @@ If you see error "MQTT connection error: 5", it means authentication problem:
 If data reading from BMS fails:
 
 1. Check USB/serial cable connection
-2. Verify correct port (you can use `dmesg | grep tty`)
+2. Verify correct port. On HA, use Settings → System → Hardware → Serial. Prefer `/dev/serial/by-id/...`.
 3. Check BMS address (usually 1)
 4. Make sure BMS supports Modbus RTU protocol
 

@@ -3,6 +3,7 @@
 Simplified configuration for Battery Monitor Add-on with Multi-battery support
 """
 
+import glob
 import json
 import os
 from pathlib import Path
@@ -29,14 +30,19 @@ class Config:
     def load_config(self):
         """Load configuration from Home Assistant options or environment"""
         options = self.load_addon_options()
-        
+
         # Multi-battery mode
         self.multi_battery_mode = options.get('multi_battery_mode', False)
         self.batteries = self._load_batteries(options)
-        
+
         # Virtual battery settings
         self.enable_virtual_battery = options.get('enable_virtual_battery', True)
         self.virtual_battery_name = options.get('virtual_battery_name', 'Battery Bank')
+        
+        # Prefer stable by-id device paths if available (can be disabled)
+        self.prefer_by_id = bool(options.get('prefer_by_id', os.getenv('PREFER_BY_ID', 'true')).__str__().lower() in ['1','true','yes'])
+        if self.prefer_by_id:
+            self._prefer_by_id_paths()
         
         # Backward compatibility - single battery mode
         if not self.multi_battery_mode:
@@ -81,6 +87,41 @@ class Config:
             batteries.append(BatteryConfig(port, address, name, enabled))
         
         return batteries
+
+    def _prefer_by_id_paths(self) -> None:
+        """Replace /dev/ttyUSBx with stable /dev/serial/by-id symlinks when possible."""
+        try:
+            by_id_dir = Path('/dev/serial/by-id')
+            if not by_id_dir.exists():
+                return
+
+            # Build mapping from real device (e.g., /dev/ttyUSB0) to by-id path
+            candidates = glob.glob(str(by_id_dir / '*'))
+            resolved_map: Dict[str, str] = {}
+            for link in candidates:
+                try:
+                    real = os.path.realpath(link)
+                    resolved_map[real] = link
+                except Exception:
+                    continue
+
+            for bat in self.batteries:
+                # Skip if already using a by-id path
+                if bat.port.startswith('/dev/serial/by-id/'):
+                    continue
+                # Resolve current port and swap to by-id if we find a match
+                try:
+                    real = os.path.realpath(bat.port)
+                except Exception:
+                    real = bat.port
+
+                if real in resolved_map:
+                    stable = resolved_map[real]
+                    # Update to stable path
+                    bat.port = stable
+        except Exception:
+            # Fail silently; this is a best-effort improvement
+            pass
     
     def get_enabled_batteries(self) -> List[BatteryConfig]:
         """Get list of enabled batteries"""

@@ -1,4 +1,6 @@
 import logging
+import os
+import time
 import serial
 
 
@@ -23,6 +25,9 @@ def request_device_info(
     
     logger.debug(f"📤 Sending: {frame}")
     
+    # Best-effort wait for serial device to appear (handles slow enumeration)
+    _wait_for_serial(port)
+
     with serial.Serial(
         port=port,
         baudrate=baudrate,
@@ -107,6 +112,20 @@ def send_modbus_request(
         response = ser.read(expected)
     
     return response
+
+
+def _wait_for_serial(port: str, wait_seconds: int = 20) -> None:
+    """Wait up to wait_seconds for the serial device path to exist."""
+    if os.path.exists(port):
+        return
+    deadline = time.time() + max(0, wait_seconds)
+    logger.info(f"⏳ Waiting for serial device {port} (up to {wait_seconds}s)...")
+    while time.time() < deadline:
+        if os.path.exists(port):
+            logger.info(f"✅ Serial device available: {port}")
+            return
+        time.sleep(0.25)
+    # Not found; leave it to pyserial to raise an informative error
 
 # Example usage:
 if __name__ == "__main__":
