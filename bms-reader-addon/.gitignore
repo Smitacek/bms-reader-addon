@@ -1,0 +1,82 @@
+# Home Assistant Add-on .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+test_data/
+*.log
+
+# Docker
+.dockerignore
+
+# Add-on specific
+options.json
+/data/
+
+# macOS
+.DS_Store
+
+# Backup files
+*.bak
+*.backup
+
+# Virtual environments
+.venv
+
+# Configuration files with sensitive data
+config.ini
+*.env
+.env
+
+# Build artifacts
+*.tar
+*.tar.gz
+
+# Build outputs - PREVENT LARGE FILES
+*.tar.gz
+*.tar
+*.zip
+
+# Docker images  
+*.img
+*.iso
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+
+# Config files with secrets
+config.ini
+!config.ini.example

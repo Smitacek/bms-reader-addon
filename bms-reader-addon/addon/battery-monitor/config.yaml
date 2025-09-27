@@ -1,0 +1,64 @@
+name: "Battery Monitor Multi"
+version: "1.1.6"
+slug: "battery-monitor-v2"
+description: "BMS Reader for LiFePO4 batteries with MQTT integration - Multi-battery support, English interface"
+arch:
+  - armhf
+  - aarch64
+  - amd64
+init: false
+startup: application
+boot: manual
+stage: stable
+homeassistant: "2023.1.0"
+url: "https://github.com/Smitacek/bms-reader-addon"
+options:
+  # Single battery mode (backward compatibility)
+  bms_port: "/dev/ttyUSB0"
+  bms_address: 1
+  
+  # Multi-battery configuration
+  multi_battery_mode: false
+  batteries: []
+  
+  # Virtual battery (aggregated data from all batteries)
+  enable_virtual_battery: true
+  virtual_battery_name: "Battery Bank"
+  
+  # MQTT Configuration
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
+  read_interval: 30
+  # Logging
+  log_level: warning
+schema:
+  # Single battery options
+  bms_port: str
+  bms_address: int(1,255)
+  
+  # Multi-battery options
+  multi_battery_mode: bool
+  batteries:
+    - port: str
+      address: int(1,255)
+      name: str?
+      enabled: bool?
+  
+  # Virtual battery options
+  enable_virtual_battery: bool
+  virtual_battery_name: str?
+  
+  # MQTT options
+  mqtt_host: str
+  mqtt_port: port
+  mqtt_username: str?
+  mqtt_password: password?
+  read_interval: int(10,300)
+  log_level: list(debug|info|warning|error|critical)?
+devices:
+  - /dev/ttyUSB0
+  - /dev/ttyUSB1
+  - /dev/ttyAMA0
+uart: true
