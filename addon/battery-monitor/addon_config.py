@@ -6,7 +6,7 @@ Simplified configuration for Battery Monitor Add-on with Multi-battery support
 import json
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 
 class BatteryConfig:

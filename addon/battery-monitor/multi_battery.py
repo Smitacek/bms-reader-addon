@@ -134,7 +134,7 @@ class MultiBatteryManager:
         results = {}
         enabled_batteries = [b for b in self.batteries if b.enabled]
 
-        logger.info(f"📊 ===== BATTERY READING CYCLE =====")
+        logger.info("📊 ===== BATTERY READING CYCLE =====")
         logger.info(f"🔄 Reading data from {len(enabled_batteries)} enabled batteries...")
 
         successful_reads = 0
@@ -182,11 +182,11 @@ class MultiBatteryManager:
                 continue
         
         # Summary logging
-        logger.info(f"📊 ===== READING SUMMARY =====")
+        logger.info("📊 ===== READING SUMMARY =====")
         logger.info(f"✅ Successful reads: {successful_reads}/{len(enabled_batteries)}")
         if failed_reads > 0:
             logger.warning(f"❌ Failed reads: {failed_reads}")
-        logger.info(f"🔋 ===========================")
+        logger.info("🔋 ===========================")
         
         return results
     

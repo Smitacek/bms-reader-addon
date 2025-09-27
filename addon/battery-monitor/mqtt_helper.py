@@ -7,7 +7,7 @@ Enhanced MQTT Helper for Multi-Battery Home Assistant Auto Discovery
 import json
 import logging
 import time
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 import paho.mqtt.client as mqtt
 
 from addon_config import get_config
@@ -78,7 +78,7 @@ class MultiBatteryMQTTPublisher:
                 logger.info(f"📡 Attempt #{attempt + 1}: Connecting to MQTT {self.config.mqtt_host}:{self.config.mqtt_port}")
                 
                 # Network availability diagnostics
-                logger.info(f"🔍 MQTT connection diagnostics:")
+                logger.info("🔍 MQTT connection diagnostics:")
                 logger.info(f"   Host: {self.config.mqtt_host}")
                 logger.info(f"   Port: {self.config.mqtt_port}")
                 logger.info(f"   Username: {'***' if self.config.mqtt_username else 'none'}")

@@ -7,7 +7,6 @@ Multi-battery support with virtual battery aggregation
 import sys
 import time
 import logging
-from typing import Dict, Any
 
 from multi_battery import MultiBatteryManager
 from mqtt_helper import MultiBatteryMQTTPublisher
@@ -42,13 +41,13 @@ def main():
     
     # Enhanced startup logging
     logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
-    logging.info(f"📊 Battery Monitor Multi v1.1.4")
+    logging.info("📊 Battery Monitor Multi v1.1.4")
     logging.info(f"🕐 Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     logging.info(f"📝 Log level: {config.log_level}")
     
     # Log configuration summary with more details
     enabled_batteries = config.get_enabled_batteries()
-    logging.info(f"🔧 ======== CONFIGURATION SUMMARY ========")
+    logging.info("🔧 ======== CONFIGURATION SUMMARY ========")
     logging.info(f"   🔋 Multi-battery mode: {'✅ ENABLED' if config.multi_battery_mode else '❌ DISABLED'}")
     logging.info(f"   📊 Total configured batteries: {len(config.batteries) if config.multi_battery_mode else 1}")
     logging.info(f"   ✅ Enabled batteries: {len(enabled_batteries)}")
@@ -57,7 +56,7 @@ def main():
         logging.info(f"   📛 Virtual battery name: '{config.virtual_battery_name}'")
     logging.info(f"   📡 MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
     logging.info(f"   ⏱️  Read Interval: {config.read_interval}s")
-    logging.info(f"🔧 =======================================")
+    logging.info("🔧 =======================================")
     
     # Initialize multi-battery manager
     try:
@@ -65,7 +64,7 @@ def main():
             batteries=enabled_batteries,
             enable_virtual=config.enable_virtual_battery
         )
-        logging.info(f"✅ Multi-battery manager initialized")
+        logging.info("✅ Multi-battery manager initialized")
     except Exception as e:
         logging.error(f"❌ Failed to initialize battery manager: {e}")
         return 1

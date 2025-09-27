@@ -43,12 +43,17 @@ class BMSParser:
         ptr = 0
 
         # 1. Header and length
-        data["ver_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
-        data["adr_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
-        data["cid1_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2
-        data["rtn_code_hex"] = hex_data_string[ptr:ptr+2]; ptr += 2 # Return code (00 = OK)
+        data["ver_hex"] = hex_data_string[ptr:ptr+2]
+        ptr += 2
+        data["adr_hex"] = hex_data_string[ptr:ptr+2]
+        ptr += 2
+        data["cid1_hex"] = hex_data_string[ptr:ptr+2]
+        ptr += 2
+        data["rtn_code_hex"] = hex_data_string[ptr:ptr+2]
+        ptr += 2  # Return code (00 = OK)
 
-        length_field_hex = hex_data_string[ptr:ptr+4]; ptr += 4
+        length_field_hex = hex_data_string[ptr:ptr+4]
+        ptr += 4
         # LSB 12 bits (3 hex characters) for INFO length in characters (nibbles)
         info_len_chars = BMSParser._hex_to_int(length_field_hex[1:])
         data["length_field"] = {
@@ -68,7 +73,8 @@ class BMSParser:
             )
 
         # Extract INFO block and Checksum
-        info_hex_block = hex_data_string[ptr : ptr + info_len_chars]; ptr += info_len_chars
+        info_hex_block = hex_data_string[ptr : ptr + info_len_chars]
+        ptr += info_len_chars
         data["checksum_hex"] = hex_data_string[ptr : ptr + 4] # Last 4 characters (2 bytes)
 
         # 2. Parse INFO block (99 bytes / 198 characters in example)
