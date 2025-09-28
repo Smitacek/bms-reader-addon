@@ -1,12 +1,14 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
 
-## 🆕 New in Version 1.1.6
+## 🆕 New in Version 1.1.8
 
+- ✅ Energy Dashboard entities: cumulative `energy_in_total` and `energy_out_total` (kWh)
+- ✅ Persist energy counters across restarts (stored under `/data`)
 - ✅ Hardened MQTT reconnect with rate-limited auto-reconnect
 - ✅ Last Will and Testament (LWT) + HA availability in discovery
 - ✅ Lower default log level to WARNING, `log_level` option added

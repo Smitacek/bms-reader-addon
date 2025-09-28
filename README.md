@@ -1,12 +1,12 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.1.6-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
-## 🆕 Latest: Battery Monitor Multi v1.1.6
+## 🆕 Latest: Battery Monitor Multi v1.1.8
 
 Production-ready multi-battery monitoring with improved MQTT reliability and reduced logging noise.
 
@@ -22,7 +22,7 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
 ### 🚀 Quick Start:
 1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
-2. **Install:** "Battery Monitor Multi" v1.1.6 (slug: `battery-monitor-v2`)
+2. **Install:** "Battery Monitor Multi" v1.1.8 (slug: `battery-monitor-v2`)
 3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
 ### 🔌 Use Stable Serial Paths (by-id) on Home Assistant
@@ -39,12 +39,12 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 
 **Advanced monitoring system for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.**
 
-### 🆕 New in Version 1.1.6
+### 🆕 New in Version 1.1.8
 
-- ✅ MQTT reconnect handling hardened (rate-limited auto-reconnect, stable loop)
-- ✅ Last Will and Testament (LWT) + availability in HA discovery
-- ✅ Default log level lowered to WARNING; `log_level` option added
-- ✅ Serial framing fix: robust ASCII frame extraction ending at CR
+- ✅ Energy Dashboard sensors: cumulative energy-in/out in kWh
+- ✅ Counters persist across restarts (stored under `/data`)
+- ✅ MQTT reconnect handling hardened (rate-limited auto-reconnect)
+- ✅ LWT availability in HA discovery for all sensors
 
 ### Features
 
@@ -239,6 +239,7 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 ### Version History
 
+- v1.1.8 - Add Energy Dashboard sensors (energy_in/out kWh) + persistence
 - v1.1.6 - MQTT reconnect + LWT, lower default logging, serial frame fix
 - v1.1.5 - Language unification and docs
 - v1.1.4 - New slug battery-monitor-v2; logging/diagnostics improvements

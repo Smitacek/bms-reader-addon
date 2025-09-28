@@ -1,9 +1,12 @@
 # Changelog
 
 ## [1.1.8] - 2025-09-28
+### Added
+- Energy Dashboard compatibility: cumulative `energy_in_total` and `energy_out_total` sensors (kWh) with `device_class: energy` and `state_class: total_increasing` for each battery and the virtual battery
+- Persistent energy counters stored under `/data/bms_energy_counters.json`
+
 ### Changed
-- Minor version bump for repository restructuring
-- Improved code organization and structure
+- Discovery now includes the new energy sensors; device `sw_version` set to 1.1.8
 
 ## [1.1.7] - 2025-09-28
 ### Added

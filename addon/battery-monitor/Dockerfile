@@ -21,6 +21,7 @@ COPY modbus.py .
 COPY mqtt_helper.py .
 COPY addon_config.py .
 COPY multi_battery.py .
+COPY energy_tracker.py .
 
 # Copy run script
 COPY run.sh /

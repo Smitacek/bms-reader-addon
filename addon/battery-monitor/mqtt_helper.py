@@ -204,7 +204,7 @@ class MultiBatteryMQTTPublisher:
                         "name": device_name,
                         "manufacturer": self.config.manufacturer,
                         "model": self.config.model + (" Virtual" if is_virtual else ""),
-                        "sw_version": "1.1.0"
+                        "sw_version": "1.1.8"
                     }
                 }
                 

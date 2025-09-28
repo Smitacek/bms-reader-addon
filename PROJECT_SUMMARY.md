@@ -1,4 +1,4 @@
-# Battery Monitor Multi v1.1.6 - Project Summary
+# Battery Monitor Multi v1.1.8 - Project Summary
 
 ## 🎯 Project Overview
 This project extends a single-battery BMS Reader Home Assistant add-on to support **multi-battery monitoring** (up to 16 batteries) with **virtual battery aggregation** and **enhanced logging**.
@@ -124,7 +124,7 @@ virtual_battery_name: "Battery Bank"
 
 ## 🏁 Final Status
 
-**Version:** 1.1.6  
+**Version:** 1.1.8  
 **Slug:** battery-monitor-v2  
 **Status:** ✅ Production Ready  
 **GitHub:** https://github.com/Smitacek/bms-reader-addon  
