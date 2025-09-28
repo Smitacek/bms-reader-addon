@@ -41,7 +41,7 @@ def main():
     
     # Enhanced startup logging
     logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
-    logging.info("📊 Battery Monitor Multi v1.1.7")
+    logging.info("📊 Battery Monitor Multi v1.1.8")
     logging.info(f"🕐 Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     logging.info(f"📝 Log level: {config.log_level}")
     

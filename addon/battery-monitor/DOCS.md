@@ -73,6 +73,8 @@ Add-on reads and publishes the following data from BMS:
 - **Voltage** - total battery voltage in V
 - **Current** - current flow in A
 - **Power** - power in W
+- **Energy In Total** - kWh (charging; cumulative, total_increasing)
+- **Energy Out Total** - kWh (discharging; cumulative, total_increasing)
 - **Remaining Capacity** - remaining capacity in Ah
 
 ### Temperatures
@@ -89,6 +91,12 @@ Add-on reads and publishes the following data from BMS:
 - **Protection Status** - protection state
 
 ## Troubleshooting
+
+### Energy Dashboard
+
+- The add-on exposes two cumulative energy sensors per battery (and for the virtual battery): `energy_in_total` and `energy_out_total`.
+- Discovery payload includes `device_class: energy`, `state_class: total_increasing` and `unit_of_measurement: kWh`, so entities appear in Energy → Home battery storage.
+- Energy counters are persisted under `/data/bms_energy_counters.json` and continue across restarts.
 
 ### MQTT Error 5 (Authentication failure)
 

@@ -4,12 +4,14 @@ Multi-Battery Manager for aggregating data from multiple BMS units
 """
 
 import logging
+import time
 from typing import Dict, List, Any, Optional
 from statistics import mean
 
 from modbus import request_device_info
 from bms_parser import BMSParser
-from addon_config import BatteryConfig
+from addon_config import BatteryConfig, get_config
+from energy_tracker import EnergyTracker
 
 
 logger = logging.getLogger(__name__)
@@ -125,6 +127,10 @@ class MultiBatteryManager:
         self.enable_virtual = enable_virtual
         self.virtual_battery = VirtualBattery() if enable_virtual else None
         self.parser = BMSParser()
+        # Energy tracking setup
+        cfg = get_config()
+        self._base_device_id = cfg.device_id
+        self._energy_tracker = EnergyTracker()
         
         # Log battery configuration on startup
         self._log_battery_configuration()
@@ -246,6 +252,16 @@ class MultiBatteryManager:
         if aggregated:
             aggregated['device_name'] = self.virtual_battery.name
             aggregated['is_virtual'] = True
+
+            # Integrate power into energy counters for virtual battery
+            try:
+                device_key = f"{self._base_device_id}_virtual"
+                e_in, e_out = self._energy_tracker.update(device_key, aggregated.get('power_w', 0.0), now_ts=time.time())
+                aggregated['energy_in_kwh'] = e_in
+                aggregated['energy_out_kwh'] = e_out
+            except Exception:
+                aggregated.setdefault('energy_in_kwh', 0.0)
+                aggregated.setdefault('energy_out_kwh', 0.0)
             
             # Log virtual battery summary
             logger.info(f"🏦 Virtual Battery '{self.virtual_battery.name}':")
@@ -338,6 +354,17 @@ class MultiBatteryManager:
             data['status'] = 'discharging'
         else:
             data['status'] = 'idle'
+
+        # Integrate power into energy counters (kWh in/out)
+        try:
+            device_key = f"{self._base_device_id}_{battery_name.lower().replace(' ', '_')}"
+            e_in, e_out = self._energy_tracker.update(device_key, data.get('power_w', 0.0), now_ts=time.time())
+            data['energy_in_kwh'] = e_in
+            data['energy_out_kwh'] = e_out
+        except Exception:
+            # Do not fail if persistence/integration has issues
+            data.setdefault('energy_in_kwh', 0.0)
+            data.setdefault('energy_out_kwh', 0.0)
         
         # Debug logging for troubleshooting
         logger.debug(f"📋 Enhanced data for {battery_name}:")

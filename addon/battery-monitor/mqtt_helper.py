@@ -308,6 +308,22 @@ class MultiBatteryMQTTPublisher:
                 "name": "Status",
                 "object_id": "status",
                 "icon": "mdi:information"
+            },
+            {
+                "name": "Energy In Total",
+                "object_id": "energy_in_total",
+                "unit_of_measurement": "kWh",
+                "device_class": "energy",
+                "state_class": "total_increasing",
+                "icon": "mdi:battery-arrow-down"
+            },
+            {
+                "name": "Energy Out Total",
+                "object_id": "energy_out_total",
+                "unit_of_measurement": "kWh",
+                "device_class": "energy",
+                "state_class": "total_increasing",
+                "icon": "mdi:battery-arrow-up"
             }
         ]
         
@@ -356,7 +372,10 @@ class MultiBatteryMQTTPublisher:
                 'min_cell_voltage': 'min_cell_voltage_v',
                 'max_cell_voltage': 'max_cell_voltage_v',
                 'cell_voltage_diff': 'cell_voltage_diff_v',
-                'status': 'status'
+                'status': 'status',
+                # Energy counters (kWh)
+                'energy_in_total': 'energy_in_kwh',
+                'energy_out_total': 'energy_out_kwh'
             }
             
             # Add special mappings for virtual battery

@@ -35,6 +35,8 @@ Advanced monitoring add-on for Daren BMS batteries with **multi-battery support*
 - **Pack Voltage** - V  
 - **Pack Current** - A (positive = charging, negative = discharging)
 - **Power** - W
+- **Energy In Total** - kWh (charging; cumulative, total_increasing)
+- **Energy Out Total** - kWh (discharging; cumulative, total_increasing)
 - **Remaining Capacity** - Ah
 - **Cell Voltages** - Individual cell monitoring
 - **Temperature** - Battery temperature
@@ -45,6 +47,8 @@ Advanced monitoring add-on for Daren BMS batteries with **multi-battery support*
 - **Total Voltage** - Sum of all battery voltages (series configuration)
 - **Total Current** - Sum of all battery currents
 - **Total Power** - Combined power output
+- **Energy In Total** - kWh (cumulative charging into bank)
+- **Energy Out Total** - kWh (cumulative discharging from bank)
 - **Total Capacity** - Sum of remaining capacity
 - **Battery Count** - Number of connected batteries
 - **Cell Voltage Range** - Min/max across all cells
@@ -105,6 +109,8 @@ sensor.battery_1_soc
 sensor.battery_1_pack_voltage  
 sensor.battery_1_pack_current
 sensor.battery_1_power
+sensor.battery_1_energy_in_total      # kWh, total_increasing
+sensor.battery_1_energy_out_total     # kWh, total_increasing
 sensor.battery_1_temperature
 ...
 ```
@@ -116,9 +122,17 @@ sensor.battery_bank_soc              # Average SOC
 sensor.battery_bank_pack_voltage     # Total voltage
 sensor.battery_bank_pack_current     # Total current
 sensor.battery_bank_power            # Total power
+sensor.battery_bank_energy_in_total  # kWh, total_increasing
+sensor.battery_bank_energy_out_total # kWh, total_increasing
 sensor.battery_bank_battery_count    # Number of batteries
 sensor.battery_bank_connected_batteries  # List of active batteries
 ```
+
+## ⚡ Energy Dashboard
+
+- The add-on publishes two cumulative energy sensors per battery (and for the virtual bank): `energy_in_total` and `energy_out_total`.
+- Discovery sets `device_class: energy`, `state_class: total_increasing`, unit `kWh`, so they are accepted by Home Assistant Energy → Home battery storage.
+- Counters persist across restarts using add-on storage under `/data`.
 
 ## Availability (LWT)
 

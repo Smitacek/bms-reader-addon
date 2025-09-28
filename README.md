@@ -111,6 +111,8 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 - **Pack Voltage** - V
 - **Pack Current** - A (positive = charging, negative = discharging)
 - **Remaining Capacity** - Ah
+- **Energy In Total** - kWh (charging; cumulative, total_increasing)
+- **Energy Out Total** - kWh (discharging; cumulative, total_increasing)
 - **Cell Voltages** - Individual cell monitoring
 - **Temperature** - Battery temperature
 - **Charge/Discharge Status**
@@ -121,6 +123,8 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 - **Total Voltage** - Sum of all battery voltages
 - **Total Current** - Sum of all battery currents  
 - **Total Power** - Combined power output
+- **Energy In Total** - kWh (cumulative charging into bank)
+- **Energy Out Total** - kWh (cumulative discharging from bank)
 - **Total Capacity** - Sum of remaining capacity
 - **Battery Count** - Number of connected batteries
 
@@ -152,6 +156,8 @@ sensor.battery_1_soc
 sensor.battery_1_pack_voltage  
 sensor.battery_1_pack_current
 sensor.battery_1_power
+sensor.battery_1_energy_in_total      # kWh, total_increasing
+sensor.battery_1_energy_out_total     # kWh, total_increasing
 sensor.battery_1_temperature
 ...
 ```
@@ -162,9 +168,17 @@ sensor.battery_bank_soc              # Average SOC
 sensor.battery_bank_pack_voltage     # Total voltage
 sensor.battery_bank_pack_current     # Total current
 sensor.battery_bank_power            # Total power
+sensor.battery_bank_energy_in_total  # kWh, total_increasing
+sensor.battery_bank_energy_out_total # kWh, total_increasing
 sensor.battery_bank_battery_count    # Number of batteries
 sensor.battery_bank_connected_batteries  # List of active batteries
 ```
+
+### Energy Dashboard
+
+- Provides two required cumulative energy sensors per battery (and for the virtual bank):
+  `energy_in_total` and `energy_out_total` with `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`.
+- These appear under Home Assistant Energy → Home battery storage. Counters persist across restarts.
 
 ### Configuration Examples
 

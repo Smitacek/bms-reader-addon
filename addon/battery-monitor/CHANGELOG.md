@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.1.8] - 2025-09-28
+### Changed
+- Minor version bump for repository restructuring
+- Improved code organization and structure
+
+## [1.1.7] - 2025-09-28
+### Added
+- Support for stable /dev/serial/by-id paths for USB serial devices
+- New `prefer_by_id` configuration option (default: true) for automatic stable path detection
+- Automatic waiting for serial devices to appear on startup (up to 30 seconds)
+- Enhanced serial device detection with fallback mechanisms
+
+### Changed
+- Improved serial port handling for better reliability
+- Enhanced documentation for serial device configuration
+
+### Fixed
+- Python linting issues resolved
+- Removed unused imports
+- Fixed f-strings without placeholders
+- Split multiple statements on single lines
+
 ## [1.1.6] - 2025-09-27
 ### Added
 - MQTT Last Will and Testament (LWT) with retained availability topic `bms/<device_id>/availability`
