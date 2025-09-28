@@ -24,8 +24,27 @@ def setup_logging(level: str = "INFO"):
     )
 
 
+def set_log_level(level: str) -> None:
+    """Force-adjust root logging level and handler levels.
+
+    This avoids silent no-op of basicConfig when a handler already exists.
+    """
+    try:
+        desired = getattr(logging, str(level).upper(), logging.INFO)
+    except Exception:
+        desired = logging.INFO
+    root = logging.getLogger()
+    root.setLevel(desired)
+    for h in root.handlers:
+        # Keep handlers permissive; let the root level decide
+        h.setLevel(logging.NOTSET)
+    logging.info(f"📣 Log level set to {logging.getLevelName(desired)}")
+
+
 def main():
     """Main function with enhanced multi-battery support and logging"""
+    # Ensure we see early logs before config is loaded
+    setup_logging("INFO")
     logging.info("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.9")
     logging.info("🚀 Starting initialization...")
     
@@ -37,8 +56,9 @@ def main():
         logging.error(f"❌ Failed to load configuration: {e}")
         return 1
     
-    # Setup logging
-    setup_logging(config.log_level)
+    # Adjust log level per config; force INFO in discovery mode
+    desired = 'INFO' if getattr(config, 'discovery_mode', False) else str(config.log_level)
+    set_log_level(desired)
     
     # Enhanced startup logging
     logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
