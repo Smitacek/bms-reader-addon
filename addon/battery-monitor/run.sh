@@ -43,13 +43,13 @@ LOG_LEVEL=$(get_config_value 'log_level' 'LOG_LEVEL' 'WARNING' )
 # Show configuration only for INFO/DEBUG levels to reduce noise
 if [[ "$LOG_LEVEL" =~ ^(DEBUG|INFO)$ ]]; then
     if command -v bashio::log.info &> /dev/null; then
-        bashio::log.info "Starting BMS Reader v1.1.8..."
+        bashio::log.info "Starting BMS Reader v1.1.9..."
         bashio::log.info "BMS Port: $BMS_PORT"
         bashio::log.info "MQTT Host: $MQTT_HOST"
         bashio::log.info "Device ID: $DEVICE_ID"
         bashio::log.info "Log Level: $LOG_LEVEL"
     else
-        echo "Starting BMS Reader v1.1.8..."
+        echo "Starting BMS Reader v1.1.9..."
         echo "BMS Port: $BMS_PORT"
         echo "MQTT Host: $MQTT_HOST"
         echo "Device ID: $DEVICE_ID"

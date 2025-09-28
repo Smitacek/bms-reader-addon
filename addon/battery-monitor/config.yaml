@@ -1,5 +1,5 @@
 name: "Battery Monitor Multi"
-version: "1.1.8"
+version: "1.1.9"
 slug: "battery-monitor-v2"
 description: "BMS Reader for LiFePO4 batteries with MQTT integration - Multi-battery support, English interface"
 arch:
@@ -35,6 +35,12 @@ options:
   read_interval: 30
   # Logging
   log_level: warning
+  # One-off discovery tool
+  discovery_mode: false
+  discovery_address_from: 1
+  discovery_address_to: 16
+  discovery_timeout_ms: 300
+  discovery_ports: []
 schema:
   # Single battery options
   bms_port: str
@@ -60,6 +66,12 @@ schema:
   mqtt_password: password?
   read_interval: int(10,300)
   log_level: list(debug|info|warning|error|critical)?
+  discovery_mode: bool?
+  discovery_address_from: int(1,255)?
+  discovery_address_to: int(1,255)?
+  discovery_timeout_ms: int(50,5000)?
+  discovery_ports:
+    - str
 devices:
   - /dev/ttyUSB0
   - /dev/ttyUSB1

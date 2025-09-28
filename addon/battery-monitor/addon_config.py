@@ -66,6 +66,13 @@ class Config:
         self.read_interval = int(options.get('read_interval', os.getenv('READ_INTERVAL', '30')))
         # Default to WARNING to reduce log verbosity; allow override via option or env
         self.log_level = str(options.get('log_level', os.getenv('LOG_LEVEL', 'WARNING'))).upper()
+
+        # Discovery (one-off scan) options
+        self.discovery_mode = bool(options.get('discovery_mode', False))
+        self.discovery_address_from = int(options.get('discovery_address_from', 1))
+        self.discovery_address_to = int(options.get('discovery_address_to', 16))
+        self.discovery_timeout_ms = int(options.get('discovery_timeout_ms', 300))
+        self.discovery_ports = options.get('discovery_ports', [])
         
         # Configuration diagnostics
         self._print_diagnostics()
@@ -148,6 +155,7 @@ class Config:
         logger.info(f"   MQTT Port: {self.mqtt_port}")
         logger.info(f"   MQTT Auth: {'Yes' if self.mqtt_username else 'No'}")
         logger.info(f"   Read Interval: {self.read_interval}s")
+        logger.info(f"   Discovery mode: {'Yes' if self.discovery_mode else 'No'}")
     
     def load_addon_options(self) -> Dict:
         """Load options from Home Assistant add-on options.json"""

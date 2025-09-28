@@ -11,6 +11,7 @@ import logging
 from multi_battery import MultiBatteryManager
 from mqtt_helper import MultiBatteryMQTTPublisher
 from addon_config import get_config
+from discovery import run_discovery
 
 
 def setup_logging(level: str = "INFO"):
@@ -25,7 +26,7 @@ def setup_logging(level: str = "INFO"):
 
 def main():
     """Main function with enhanced multi-battery support and logging"""
-    logging.info("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.8")
+    logging.info("🔋 Battery Monitor Add-on - Multi-Battery Version 1.1.9")
     logging.info("🚀 Starting initialization...")
     
     # Load configuration
@@ -41,7 +42,7 @@ def main():
     
     # Enhanced startup logging
     logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
-    logging.info("📊 Battery Monitor Multi v1.1.8")
+    logging.info("📊 Battery Monitor Multi v1.1.9")
     logging.info(f"🕐 Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     logging.info(f"📝 Log level: {config.log_level}")
     
@@ -57,6 +58,20 @@ def main():
     logging.info(f"   📡 MQTT Host: {config.mqtt_host}:{config.mqtt_port}")
     logging.info(f"   ⏱️  Read Interval: {config.read_interval}s")
     logging.info("🔧 =======================================")
+
+    # One-off discovery mode
+    if getattr(config, 'discovery_mode', False):
+        logging.info("🔎 Discovery mode enabled - scanning for BMS devices...")
+        summary = run_discovery({
+            'discovery_ports': config.discovery_ports,
+            'discovery_address_from': config.discovery_address_from,
+            'discovery_address_to': config.discovery_address_to,
+            'discovery_timeout_ms': config.discovery_timeout_ms,
+        })
+        logging.info(f"🔎 Discovery finished. Found: {summary.get('count', 0)} devices.")
+        logging.info("📝 Copy batteries:[] block from /data/discovered_batteries.yaml into add-on options.")
+        logging.info("🚪 Exiting because discovery_mode is enabled. Disable it to start normal monitoring.")
+        return 0
     
     # Initialize multi-battery manager
     try:

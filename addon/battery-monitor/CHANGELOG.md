@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.9] - 2025-09-28
+### Added
+- One-off discovery mode that scans serial ports and Modbus addresses, writes ready-to-copy YAML to `/data/discovered_batteries.yaml`
+- Documentation and options for `discovery_mode` and related settings
+- Energy Dashboard compatibility: cumulative `energy_in_total` and `energy_out_total` sensors (kWh) with `device_class: energy` and `state_class: total_increasing`
+
+### Changed
+- Discovery now includes new energy sensors; device `sw_version` set to 1.1.9
+
 ## [1.1.8] - 2025-09-28
 ### Added
 - Energy Dashboard compatibility: cumulative `energy_in_total` and `energy_out_total` sensors (kWh) with `device_class: energy` and `state_class: total_increasing` for each battery and the virtual battery

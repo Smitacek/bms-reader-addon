@@ -1,12 +1,12 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.9-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
-## 🆕 Latest: Battery Monitor Multi v1.1.8
+## 🆕 Latest: Battery Monitor Multi v1.1.9
 
 Production-ready multi-battery monitoring with improved MQTT reliability and reduced logging noise.
 
@@ -22,7 +22,7 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
 ### 🚀 Quick Start:
 1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
-2. **Install:** "Battery Monitor Multi" v1.1.8 (slug: `battery-monitor-v2`)
+2. **Install:** "Battery Monitor Multi" v1.1.9 (slug: `battery-monitor-v2`)
 3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
 ### 🔌 Use Stable Serial Paths (by-id) on Home Assistant
@@ -39,9 +39,10 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 
 **Advanced monitoring system for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.**
 
-### 🆕 New in Version 1.1.8
+### 🆕 New in Version 1.1.9
 
 - ✅ Energy Dashboard sensors: cumulative energy-in/out in kWh
+- ✅ One-off discovery tool (writes `/data/discovered_batteries.yaml`)
 - ✅ Counters persist across restarts (stored under `/data`)
 - ✅ MQTT reconnect handling hardened (rate-limited auto-reconnect)
 - ✅ LWT availability in HA discovery for all sensors
@@ -180,6 +181,14 @@ sensor.battery_bank_connected_batteries  # List of active batteries
   `energy_in_total` and `energy_out_total` with `device_class: energy`, `state_class: total_increasing`, `unit_of_measurement: kWh`.
 - These appear under Home Assistant Energy → Home battery storage. Counters persist across restarts.
 
+### One-off Discovery Tool
+
+- To scan connected batteries and generate a ready-to-copy config:
+  1) In add-on options set `discovery_mode: true` (optionally adjust `discovery_address_from/to`, `discovery_timeout_ms`, `discovery_ports`).
+  2) Start the add-on. It will scan existing serial ports and addresses, then write `/data/discovered_batteries.yaml` with a `batteries:` block.
+  3) Copy the `batteries:` block into add-on options, set `multi_battery_mode: true` and desired names, then set `discovery_mode: false` and restart.
+  - The log also shows a preview of the generated YAML and the number of devices found.
+
 ### Configuration Examples
 
 #### Solar System with 4 Batteries
@@ -239,7 +248,7 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 ### Version History
 
-- v1.1.8 - Add Energy Dashboard sensors (energy_in/out kWh) + persistence
+- v1.1.9 - Add one-off discovery tool + Energy Dashboard sensors (kWh) + persistence
 - v1.1.6 - MQTT reconnect + LWT, lower default logging, serial frame fix
 - v1.1.5 - Language unification and docs
 - v1.1.4 - New slug battery-monitor-v2; logging/diagnostics improvements

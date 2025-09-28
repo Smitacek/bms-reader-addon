@@ -1,12 +1,13 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.1.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.9-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
 
-## 🆕 New in Version 1.1.8
+## 🆕 New in Version 1.1.9
 
+- ✅ One-off discovery tool to generate batteries config (writes `/data/discovered_batteries.yaml`)
 - ✅ Energy Dashboard entities: cumulative `energy_in_total` and `energy_out_total` (kWh)
 - ✅ Persist energy counters across restarts (stored under `/data`)
 - ✅ Hardened MQTT reconnect with rate-limited auto-reconnect
@@ -135,6 +136,14 @@ sensor.battery_bank_connected_batteries  # List of active batteries
 - The add-on publishes two cumulative energy sensors per battery (and for the virtual bank): `energy_in_total` and `energy_out_total`.
 - Discovery sets `device_class: energy`, `state_class: total_increasing`, unit `kWh`, so they are accepted by Home Assistant Energy → Home battery storage.
 - Counters persist across restarts using add-on storage under `/data`.
+
+## 🔎 One-off Discovery Tool
+
+- Quickly discover connected BMS units and generate a `batteries:` config:
+  - Set `discovery_mode: true` in add-on options (optionally set `discovery_address_from/to`, `discovery_timeout_ms`, `discovery_ports`).
+  - Start the add-on. It scans existing serial ports and writes `/data/discovered_batteries.yaml` with a ready-to-copy YAML snippet.
+  - Copy the `batteries:` block to options, set `multi_battery_mode: true`, disable `discovery_mode`, and restart.
+  - Logs show a summary and a short preview of the generated YAML.
 
 ## Availability (LWT)
 
