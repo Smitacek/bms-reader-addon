@@ -1,12 +1,12 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
-## 🆕 Latest: Battery Monitor Multi v1.2.0
+## 🆕 Latest: Battery Monitor Multi v1.2.1
 
 Production-ready multi-battery monitoring with improved MQTT reliability and reduced logging noise.
 
@@ -22,7 +22,7 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
 ### 🚀 Quick Start:
 1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
-2. **Install:** "Battery Monitor Multi" v1.2.0 (slug: `battery-monitor-v2`)
+2. **Install:** "Battery Monitor Multi" v1.2.1 (slug: `battery-monitor-v2`)
 3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
 ### 🔌 Use Stable Serial Paths (by-id) on Home Assistant
@@ -173,14 +173,15 @@ sensor.battery_1_temperature
 
 #### Virtual Battery Sensors (system overview)
 ```
-sensor.battery_bank_soc              # Average SOC
-sensor.battery_bank_pack_voltage     # Total voltage
-sensor.battery_bank_pack_current     # Total current
-sensor.battery_bank_power            # Total power
-sensor.battery_bank_energy_in_total  # kWh, total_increasing
-sensor.battery_bank_energy_out_total # kWh, total_increasing
-sensor.battery_bank_battery_count    # Number of batteries
-sensor.battery_bank_connected_batteries  # List of active batteries
+sensor.battery_bank_soc                 # Average SOC
+sensor.battery_bank_avg_pack_voltage    # Average of pack voltages
+sensor.battery_bank_pack_voltage_min    # Minimum pack voltage
+sensor.battery_bank_pack_voltage_max    # Maximum pack voltage
+sensor.battery_bank_pack_voltage_diff   # Max - Min pack voltage
+sensor.battery_bank_energy_in_total     # kWh, total_increasing (sum of batteries)
+sensor.battery_bank_energy_out_total    # kWh, total_increasing (sum of batteries)
+sensor.battery_bank_battery_count       # Number of batteries
+sensor.battery_bank_connected_batteries # List of active batteries
 ```
 
 ### Energy Dashboard
@@ -256,6 +257,7 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 ### Version History
 
+- v1.2.1 - Virtual battery is topology-agnostic: remove total voltage/current/power, add avg/min/max/diff pack voltage; sum of per-battery energy kWh
 - v1.2.0 - MQTT auto-credentials via Supervisor discovery; manual override preserved; AppArmor enabled; reduced device permissions
 - v1.1.9 - Add one-off discovery tool + Energy Dashboard sensors (kWh) + persistence
 - v1.1.6 - MQTT reconnect + LWT, lower default logging, serial frame fix

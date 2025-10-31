@@ -1,6 +1,6 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
@@ -50,15 +50,13 @@ Advanced monitoring add-on for Daren BMS batteries with **multi-battery support*
 - **Status** - Charge/discharge/idle
 
 ### Virtual Battery (Aggregated)
-- **Average SOC** - Weighted average across all batteries
-- **Total Voltage** - Sum of all battery voltages (series configuration)
-- **Total Current** - Sum of all battery currents
-- **Total Power** - Combined power output
-- **Energy In Total** - kWh (cumulative charging into bank)
-- **Energy Out Total** - kWh (cumulative discharging from bank)
-- **Total Capacity** - Sum of remaining capacity
+- **Average SOC** - Average across all batteries
+- **Average Pack Voltage** - Mean of per-battery pack voltages (topology-agnostic)
+- **Pack Voltage Range** - Min/Max pack voltage across batteries and their difference
+- **Energy In Total** - kWh (sum of per-battery cumulative charging)
+- **Energy Out Total** - kWh (sum of per-battery cumulative discharging)
 - **Battery Count** - Number of connected batteries
-- **Cell Voltage Range** - Min/max across all cells
+- **Cell Voltage Range** - Min/Max across all cells
 
 ## ⚙️ Configuration
 
@@ -133,16 +131,17 @@ sensor.battery_1_temperature
 ```
 
 ### Virtual Battery Sensors
-The virtual battery provides system-wide monitoring:
+The virtual battery avoids topology-dependent totals and exposes:
 ```
-sensor.battery_bank_soc              # Average SOC
-sensor.battery_bank_pack_voltage     # Total voltage
-sensor.battery_bank_pack_current     # Total current
-sensor.battery_bank_power            # Total power
-sensor.battery_bank_energy_in_total  # kWh, total_increasing
-sensor.battery_bank_energy_out_total # kWh, total_increasing
-sensor.battery_bank_battery_count    # Number of batteries
-sensor.battery_bank_connected_batteries  # List of active batteries
+sensor.battery_bank_soc                 # Average SOC
+sensor.battery_bank_avg_pack_voltage    # Average of pack voltages
+sensor.battery_bank_pack_voltage_min    # Minimum pack voltage
+sensor.battery_bank_pack_voltage_max    # Maximum pack voltage
+sensor.battery_bank_pack_voltage_diff   # Max - Min pack voltage
+sensor.battery_bank_energy_in_total     # kWh, total_increasing (sum of batteries)
+sensor.battery_bank_energy_out_total    # kWh, total_increasing (sum of batteries)
+sensor.battery_bank_battery_count       # Number of batteries
+sensor.battery_bank_connected_batteries # List of active batteries
 ```
 
 ## ⚡ Energy Dashboard

@@ -11,6 +11,17 @@
 - Documentation updated to describe auto credentials behavior.
 - Removed explicit `devices:` list in favor of `uart: true` to reduce permissions to the minimum needed.
 
+## [1.2.1] - 2025-10-31
+### Fixed
+- Virtual battery no longer assumes series/parallel: removed topology-dependent total voltage/current/power.
+- Virtual energy counters now sum per-battery cumulative energy (kWh) instead of integrating an aggregated power.
+
+### Added
+- Virtual battery exposes new sensors: `avg_pack_voltage`, `pack_voltage_min`, `pack_voltage_max`, `pack_voltage_diff`.
+
+### Breaking
+- Old virtual sensors for `pack_voltage`, `pack_current`, and `power` are no longer published. Home Assistant may keep stale entities until they are removed manually.
+
 ## [1.1.9] - 2025-09-28
 ### Added
 - One-off discovery mode that scans serial ports and Modbus addresses, writes ready-to-copy YAML to `/data/discovered_batteries.yaml`

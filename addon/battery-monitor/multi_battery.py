@@ -42,54 +42,48 @@ class VirtualBattery:
             return {}
         
         # Calculate aggregated values
+        # Aggregate without assuming series/parallel topology
+        voltages = [d.get('pack_voltage_v', 0.0) for d in all_data]
+        currents = [d.get('pack_current_a', 0.0) for d in all_data]
+
         aggregated = {
-            # SOC - average of all batteries
+            # SOC - simple average across batteries
             'soc_percent': self._safe_average([d.get('soc_percent', 0) for d in all_data]),
-            
-            # Voltages - sum for series, average for parallel (assuming series for now)
-            'pack_voltage_v': sum([d.get('pack_voltage_v', 0) for d in all_data]),
-            
-            # Current - sum of all currents
-            'pack_current_a': sum([d.get('pack_current_a', 0) for d in all_data]),
-            
-            # Capacity - sum of all capacities
-            'remaining_capacity_ah': sum([d.get('remaining_capacity_ah', 0) for d in all_data]),
-            'full_capacity_ah': sum([d.get('full_capacity_ah', 0) for d in all_data]),
-            
-            # Temperature - average of all temperatures
+
+            # Voltage stats across batteries (topology-agnostic)
+            'avg_pack_voltage_v': self._safe_average(voltages),
+            'pack_voltage_min_v': min(voltages) if voltages else 0.0,
+            'pack_voltage_max_v': max(voltages) if voltages else 0.0,
+            'pack_voltage_diff_v': (max(voltages) - min(voltages)) if voltages else 0.0,
+
+            # Temperature - average of available readings
             'temperature_1_c': self._safe_average([d.get('temperature_1_c', 20) for d in all_data]),
             'temperature_2_c': self._safe_average([d.get('temperature_2_c', 20) for d in all_data]),
-            
-            # Status - worst case (any protection triggers for all)
+
+            # Status - worst case (any non-normal protection takes precedence)
             'protection_status': self._aggregate_protection_status(all_data),
-            
+
             # Cell data - collect from all batteries
             'cell_voltages_v': self._aggregate_cell_voltages(all_data),
-            
-            # Cycles - maximum of all batteries
-            'cycle_count': max([d.get('cycle_count', 0) for d in all_data]) if all_data else 0,
-            
-            # Additional aggregated fields
-            'battery_count': len(all_data),
-            'connected_batteries': list(self.batteries_data.keys()),
-            
-            # Min/Max values across all batteries
+
+            # Min/Max cell voltages across all cells
             'min_cell_voltage_v': min([d.get('min_cell_voltage_v', 3.0) for d in all_data]) if all_data else 0,
             'max_cell_voltage_v': max([d.get('max_cell_voltage_v', 3.4) for d in all_data]) if all_data else 0,
+
+            # Meta
+            'battery_count': len(all_data),
+            'connected_batteries': list(self.batteries_data.keys()),
         }
-        
-        # Calculate derived values
-        aggregated['power_w'] = aggregated['pack_voltage_v'] * aggregated['pack_current_a']
-        aggregated['cell_voltage_diff_v'] = aggregated['max_cell_voltage_v'] - aggregated['min_cell_voltage_v']
-        
-        # Status based on aggregated data
-        if aggregated['pack_current_a'] > 0.1:
+
+        # Status based on per-battery statuses (charging wins over idle)
+        statuses = [d.get('status', 'idle') for d in all_data]
+        if any(s == 'charging' for s in statuses):
             aggregated['status'] = 'charging'
-        elif aggregated['pack_current_a'] < -0.1:
+        elif any(s == 'discharging' for s in statuses):
             aggregated['status'] = 'discharging'
         else:
             aggregated['status'] = 'idle'
-        
+
         return aggregated
     
     def _safe_average(self, values: List[float]) -> float:
@@ -253,23 +247,24 @@ class MultiBatteryManager:
             aggregated['device_name'] = self.virtual_battery.name
             aggregated['is_virtual'] = True
 
-            # Integrate power into energy counters for virtual battery
+            # Sum per-battery energy counters to avoid topology assumptions
             try:
-                device_key = f"{self._base_device_id}_virtual"
-                e_in, e_out = self._energy_tracker.update(device_key, aggregated.get('power_w', 0.0), now_ts=time.time())
+                e_in = 0.0
+                e_out = 0.0
+                for bname, bdata in self.virtual_battery.batteries_data.items():
+                    e_in += float(bdata.get('energy_in_kwh', 0.0))
+                    e_out += float(bdata.get('energy_out_kwh', 0.0))
                 aggregated['energy_in_kwh'] = e_in
                 aggregated['energy_out_kwh'] = e_out
             except Exception:
-                aggregated.setdefault('energy_in_kwh', 0.0)
-                aggregated.setdefault('energy_out_kwh', 0.0)
+                aggregated['energy_in_kwh'] = aggregated.get('energy_in_kwh', 0.0)
+                aggregated['energy_out_kwh'] = aggregated.get('energy_out_kwh', 0.0)
             
             # Log virtual battery summary
             logger.info(f"🏦 Virtual Battery '{self.virtual_battery.name}':")
             logger.info(f"   📊 Aggregated from {aggregated.get('battery_count', 0)} batteries")
             logger.info(f"   🔋 SOC: {aggregated.get('soc_percent', 0):.1f}%")
-            logger.info(f"   ⚡ Total Voltage: {aggregated.get('pack_voltage_v', 0):.2f}V")
-            logger.info(f"   🔌 Total Current: {aggregated.get('pack_current_a', 0):.2f}A")
-            logger.info(f"   💪 Total Power: {aggregated.get('power_w', 0):.1f}W")
+            logger.info(f"   ⚡ Avg Voltage: {aggregated.get('avg_pack_voltage_v', 0):.2f}V (min {aggregated.get('pack_voltage_min_v', 0):.2f}V / max {aggregated.get('pack_voltage_max_v', 0):.2f}V, diff {aggregated.get('pack_voltage_diff_v', 0):.2f}V)")
             logger.info(f"   🌡️  Avg Temperature: {aggregated.get('temperature_1_c', 0):.1f}°C")
             
         return aggregated

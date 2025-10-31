@@ -204,7 +204,7 @@ class MultiBatteryMQTTPublisher:
                         "name": device_name,
                         "manufacturer": self.config.manufacturer,
                         "model": self.config.model + (" Virtual" if is_virtual else ""),
-                        "sw_version": "1.2.0"
+                        "sw_version": "1.2.1"
                     }
                 }
                 
@@ -231,7 +231,95 @@ class MultiBatteryMQTTPublisher:
             return False
     
     def _get_sensor_definitions(self, is_virtual: bool = False) -> List[Dict]:
-        """Returns sensor definitions for battery"""
+        """Returns sensor definitions for battery.
+
+        For virtual battery, avoid topology-dependent sensors (pack current, power, total voltage).
+        """
+        if is_virtual:
+            return [
+                {
+                    "name": "SOC",
+                    "object_id": "soc",
+                    "unit_of_measurement": "%",
+                    "device_class": "battery",
+                    "state_class": "measurement",
+                    "icon": "mdi:battery"
+                },
+                {
+                    "name": "Avg Pack Voltage",
+                    "object_id": "avg_pack_voltage",
+                    "unit_of_measurement": "V",
+                    "device_class": "voltage",
+                    "state_class": "measurement",
+                    "icon": "mdi:lightning-bolt"
+                },
+                {
+                    "name": "Min Pack Voltage",
+                    "object_id": "pack_voltage_min",
+                    "unit_of_measurement": "V",
+                    "device_class": "voltage",
+                    "state_class": "measurement",
+                    "icon": "mdi:battery-low"
+                },
+                {
+                    "name": "Max Pack Voltage",
+                    "object_id": "pack_voltage_max",
+                    "unit_of_measurement": "V",
+                    "device_class": "voltage",
+                    "state_class": "measurement",
+                    "icon": "mdi:battery-high"
+                },
+                {
+                    "name": "Pack Voltage Difference",
+                    "object_id": "pack_voltage_diff",
+                    "unit_of_measurement": "V",
+                    "device_class": "voltage",
+                    "state_class": "measurement",
+                    "icon": "mdi:arrow-expand-horizontal"
+                },
+                {
+                    "name": "Temperature",
+                    "object_id": "temperature",
+                    "unit_of_measurement": "°C",
+                    "device_class": "temperature",
+                    "state_class": "measurement",
+                    "icon": "mdi:thermometer"
+                },
+                {
+                    "name": "Status",
+                    "object_id": "status",
+                    "icon": "mdi:information"
+                },
+                {
+                    "name": "Energy In Total",
+                    "object_id": "energy_in_total",
+                    "unit_of_measurement": "kWh",
+                    "device_class": "energy",
+                    "state_class": "total_increasing",
+                    "icon": "mdi:battery-arrow-down"
+                },
+                {
+                    "name": "Energy Out Total",
+                    "object_id": "energy_out_total",
+                    "unit_of_measurement": "kWh",
+                    "device_class": "energy",
+                    "state_class": "total_increasing",
+                    "icon": "mdi:battery-arrow-up"
+                },
+                {
+                    "name": "Battery Count",
+                    "object_id": "battery_count",
+                    "state_class": "measurement",
+                    "icon": "mdi:counter"
+                },
+                {
+                    "name": "Connected Batteries",
+                    "object_id": "connected_batteries",
+                    "icon": "mdi:battery-outline"
+                },
+            ]
+
+        # Non-virtual battery sensors
         base_sensors = [
             {
                 "name": "SOC",
@@ -327,23 +415,6 @@ class MultiBatteryMQTTPublisher:
             }
         ]
         
-        # Add special sensors for virtual battery
-        if is_virtual:
-            virtual_sensors = [
-                {
-                    "name": "Battery Count",
-                    "object_id": "battery_count",
-                    "state_class": "measurement",
-                    "icon": "mdi:counter"
-                },
-                {
-                    "name": "Connected Batteries",
-                    "object_id": "connected_batteries",
-                    "icon": "mdi:battery-outline"
-                }
-            ]
-            base_sensors.extend(virtual_sensors)
-        
         return base_sensors
     
     def publish_battery_data(self, battery_name: str, data: Dict[str, Any], is_virtual: bool = False) -> bool:
@@ -380,7 +451,14 @@ class MultiBatteryMQTTPublisher:
             
             # Add special mappings for virtual battery
             if is_virtual:
+                # Remove topology-dependent mappings for virtual battery
+                for k in ['pack_voltage', 'pack_current', 'power', 'remaining_capacity']:
+                    sensor_mappings.pop(k, None)
                 sensor_mappings.update({
+                    'avg_pack_voltage': 'avg_pack_voltage_v',
+                    'pack_voltage_min': 'pack_voltage_min_v',
+                    'pack_voltage_max': 'pack_voltage_max_v',
+                    'pack_voltage_diff': 'pack_voltage_diff_v',
                     'battery_count': 'battery_count',
                     'connected_batteries': 'connected_batteries'
                 })
