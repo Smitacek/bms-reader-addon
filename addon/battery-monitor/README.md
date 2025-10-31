@@ -1,9 +1,13 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.1.9-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
+
+## 🆕 New in Version 1.2.0
+
+- ✅ MQTT auto credentials via Home Assistant Supervisor (Mosquitto) discovery; manual options remain as fallback/override
 
 ## 🆕 New in Version 1.1.9
 
@@ -58,6 +62,13 @@ Advanced monitoring add-on for Daren BMS batteries with **multi-battery support*
 
 ## ⚙️ Configuration
 
+### MQTT Auto Credentials (Supervisor)
+- The add-on now automatically fetches MQTT host/port/credentials from Home Assistant Supervisor (Mosquitto add-on) via service discovery.
+- If discovered, these credentials are used by default. Manual values in options act as a fallback or override:
+  - If you set `mqtt_username/mqtt_password` in options, they override auto creds.
+  - If you set a custom `mqtt_host`/`mqtt_port`, that also overrides auto host/port.
+  - Leave `mqtt_username`/`mqtt_password` empty to use auto credentials with the Mosquitto add-on.
+
 ### Single Battery (Backward Compatible)
 ```yaml
 bms_port: "/dev/ttyUSB0"
@@ -104,6 +115,9 @@ log_level: warning
 ```
 
 ## 🏠 Home Assistant Integration
+
+Security
+- AppArmor confinement is enabled (`apparmor: true`). The add-on requests only UART access (`uart: true`) and avoids broader `devices:` mappings.
 
 ### Individual Battery Sensors
 Each battery creates its own set of sensors:

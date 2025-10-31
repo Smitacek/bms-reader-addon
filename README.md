@@ -1,12 +1,12 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.1.9-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
-## 🆕 Latest: Battery Monitor Multi v1.1.9
+## 🆕 Latest: Battery Monitor Multi v1.2.0
 
 Production-ready multi-battery monitoring with improved MQTT reliability and reduced logging noise.
 
@@ -22,7 +22,7 @@ Production-ready multi-battery monitoring with improved MQTT reliability and red
 
 ### 🚀 Quick Start:
 1. **Add Repository:** `https://github.com/Smitacek/bms-reader-addon`
-2. **Install:** "Battery Monitor Multi" v1.1.9 (slug: `battery-monitor-v2`)
+2. **Install:** "Battery Monitor Multi" v1.2.0 (slug: `battery-monitor-v2`)
 3. **Configure:** Multi-battery setup or single battery (fully compatible)
 
 ### 🔌 Use Stable Serial Paths (by-id) on Home Assistant
@@ -38,6 +38,10 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 ## 🔋 Battery Monitor Add-on
 
 **Advanced monitoring system for Daren BMS batteries with automatic Home Assistant integration via MQTT Auto Discovery.**
+
+### 🆕 New in Version 1.2.0
+
+- ✅ MQTT auto credentials via Home Assistant Supervisor (Mosquitto) discovery; manual values still override when provided
 
 ### 🆕 New in Version 1.1.9
 
@@ -76,8 +80,10 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
    # Prefer by-id path (stable across reboots)
    bms_port: "/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_AH06XABC-if00-port0"
    bms_address: 1
-   mqtt_host: "core-mosquitto"
-   mqtt_port: 1883
+   # MQTT credentials are auto-detected from Supervisor when available.
+   # Optionally override manually:
+   # mqtt_host: "core-mosquitto"
+   # mqtt_port: 1883
    read_interval: 30
    # optional
    log_level: warning
@@ -97,7 +103,9 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
        enabled: true
    enable_virtual_battery: true
    virtual_battery_name: "Battery Bank"
-   mqtt_host: "core-mosquitto"
+   # MQTT credentials are auto-detected from Supervisor when available.
+   # Optionally override manually:
+   # mqtt_host: "core-mosquitto"
    read_interval: 30
    # optional
    log_level: warning
@@ -248,6 +256,7 @@ If you experience issues, the add-on includes comprehensive diagnostics:
 
 ### Version History
 
+- v1.2.0 - MQTT auto-credentials via Supervisor discovery; manual override preserved; AppArmor enabled; reduced device permissions
 - v1.1.9 - Add one-off discovery tool + Energy Dashboard sensors (kWh) + persistence
 - v1.1.6 - MQTT reconnect + LWT, lower default logging, serial frame fix
 - v1.1.5 - Language unification and docs

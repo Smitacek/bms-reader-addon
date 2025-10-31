@@ -50,11 +50,36 @@ class Config:
             single_address = int(options.get('bms_address', os.getenv('BMS_ADDRESS', '1')))
             self.batteries = [BatteryConfig(single_port, single_address)]
         
-        # MQTT Configuration  
-        self.mqtt_host = options.get('mqtt_host', os.getenv('MQTT_HOST', 'core-mosquitto'))
-        self.mqtt_port = int(options.get('mqtt_port', os.getenv('MQTT_PORT', '1883')))
-        self.mqtt_username = options.get('mqtt_username', os.getenv('MQTT_USERNAME', ''))
-        self.mqtt_password = options.get('mqtt_password', os.getenv('MQTT_PASSWORD', ''))
+        # MQTT Configuration with Supervisor auto-discovery (env) and manual fallback
+        # Prefer discovered env when available, unless user explicitly overrides in options
+        env_host = os.getenv('MQTT_HOST', '').strip()
+        env_port = os.getenv('MQTT_PORT', '').strip()
+        env_user = os.getenv('MQTT_USERNAME', '').strip()
+        env_pass = os.getenv('MQTT_PASSWORD', '').strip()
+
+        opt_host = str(options.get('mqtt_host', 'core-mosquitto')).strip()
+        opt_port = str(options.get('mqtt_port', '1883')).strip()
+        opt_user = str(options.get('mqtt_username', '') or '').strip()
+        opt_pass = str(options.get('mqtt_password', '') or '').strip()
+
+        # Manual override if user intentionally set non-default host/port or provided user/pass
+        manual_override = bool(
+            opt_user or opt_pass or (opt_host and opt_host != 'core-mosquitto') or (opt_port and str(opt_port) not in ('', '1883'))
+        )
+
+        # Host/port: use discovered values unless manually overridden
+        self.mqtt_host = env_host if (env_host and not manual_override) else (opt_host or 'core-mosquitto')
+        try:
+            self.mqtt_port = int(env_port) if (env_port and not manual_override) else int(opt_port or '1883')
+        except ValueError:
+            self.mqtt_port = 1883
+
+        # Credentials: prefer manual if provided, otherwise use discovered env
+        self.mqtt_username = opt_user if opt_user else env_user
+        self.mqtt_password = opt_pass if opt_pass else env_pass
+
+        # Track source for diagnostics
+        self.mqtt_source = 'auto' if ((env_host or env_port or env_user or env_pass) and not manual_override) else 'manual'
         
         # Device Configuration
         self.device_name = "BMS LiFePO4 Battery Monitor"
@@ -154,6 +179,7 @@ class Config:
         logger.info(f"   MQTT Host: {self.mqtt_host}")
         logger.info(f"   MQTT Port: {self.mqtt_port}")
         logger.info(f"   MQTT Auth: {'Yes' if self.mqtt_username else 'No'}")
+        logger.info(f"   MQTT Source: {getattr(self, 'mqtt_source', 'manual')}")
         logger.info(f"   Read Interval: {self.read_interval}s")
         logger.info(f"   Discovery mode: {'Yes' if self.discovery_mode else 'No'}")
     

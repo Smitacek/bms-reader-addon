@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.0] - 2025-10-31
+### Added
+- MQTT auto-credentials via Home Assistant Supervisor discovery (Mosquitto add-on). The add-on now automatically uses discovered `host/port/username/password` when available.
+- Configuration diagnostics now include `MQTT Source: auto|manual`.
+- Enable AppArmor confinement (`apparmor: true`) to strengthen sandboxing.
+
+### Changed
+- Manual options still work as fallback/override: setting `mqtt_username/mqtt_password` or a custom `mqtt_host/mqtt_port` overrides the auto credentials.
+- Documentation updated to describe auto credentials behavior.
+- Removed explicit `devices:` list in favor of `uart: true` to reduce permissions to the minimum needed.
+
 ## [1.1.9] - 2025-09-28
 ### Added
 - One-off discovery mode that scans serial ports and Modbus addresses, writes ready-to-copy YAML to `/data/discovered_batteries.yaml`
