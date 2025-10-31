@@ -204,7 +204,7 @@ class MultiBatteryMQTTPublisher:
                         "name": device_name,
                         "manufacturer": self.config.manufacturer,
                         "model": self.config.model + (" Virtual" if is_virtual else ""),
-                        "sw_version": "1.2.1"
+                        "sw_version": "1.2.2"
                     }
                 }
                 
@@ -212,6 +212,12 @@ class MultiBatteryMQTTPublisher:
                 for attr in ['unit_of_measurement', 'device_class', 'state_class', 'icon']:
                     if attr in sensor:
                         config[attr] = sensor[attr]
+                # Hint UI to use 3 decimals for voltage
+                try:
+                    if sensor.get('device_class') == 'voltage':
+                        config['suggested_display_precision'] = 3
+                except Exception:
+                    pass
                 
                 # Add availability to discovery so HA shows correct status
                 config["availability"] = [{
