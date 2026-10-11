@@ -5,6 +5,9 @@ Multi-Battery Manager for aggregating data from multiple BMS units
 
 import logging
 import time
+import math
+import re
+from datetime import datetime, timezone
 from typing import Dict, List, Any, Optional
 from statistics import mean
 
@@ -44,11 +47,18 @@ class VirtualBattery:
         # Calculate aggregated values
         # Aggregate without assuming series/parallel topology
         voltages = [d.get('pack_voltage_v', 0.0) for d in all_data]
-        currents = [d.get('pack_current_a', 0.0) for d in all_data]
+        capacities = [d.get('full_charge_capacity_ah') for d in all_data]
+        socs = [d.get('soc_percent') for d in all_data]
+        if any(not isinstance(c, (int, float)) or not math.isfinite(c) or c <= 0 for c in capacities):
+            logger.warning("Bank unavailable: missing or invalid full charge capacity")
+            return {}
+        if any(not isinstance(s, (int, float)) or not math.isfinite(s) or not 0 <= s <= 100 for s in socs):
+            return {}
+        weighted_soc = sum(s * c for s, c in zip(socs, capacities)) / sum(capacities)
 
         aggregated = {
-            # SOC - simple average across batteries
-            'soc_percent': self._safe_average([d.get('soc_percent', 0) for d in all_data]),
+            # Capacity-weighted BMS SoC; no series/parallel inference.
+            'soc_percent': weighted_soc,
 
             # Voltage stats across batteries (topology-agnostic)
             'avg_pack_voltage_v': self._safe_average(voltages),
@@ -125,6 +135,23 @@ class MultiBatteryManager:
         cfg = get_config()
         self._base_device_id = cfg.device_id
         self._energy_tracker = EnergyTracker()
+        self.stale_timeout = cfg.stale_timeout
+        self._health = {b.name: {'last_success': None, 'last_success_monotonic': None,
+                                'error_count': 0, 'consecutive_errors': 0}
+                        for b in batteries if b.enabled}
+        if len(self._health) != sum(b.enabled for b in batteries) or len({b.name.lower().replace(" ", "_") for b in batteries if b.enabled}) != len(self._health):
+            raise ValueError("Enabled battery names must be unique")
+        for battery in batteries:
+            if not battery.enabled:
+                continue
+            normalized = battery.name.lower().replace(' ', '_')
+            if normalized in ('virtual', '_virtual_battery') or not re.fullmatch(r'[a-z0-9_-]+', normalized):
+                raise ValueError("Battery name is reserved or invalid for MQTT discovery")
+        self._bank_complete = False
+        self._bank_last_success = None
+        self._bank_last_success_monotonic = None
+        self._bank_errors = 0
+        self._bank_consecutive_errors = 0
         
         # Log battery configuration on startup
         self._log_battery_configuration()
@@ -139,6 +166,7 @@ class MultiBatteryManager:
 
         successful_reads = 0
         failed_reads = 0
+        self._bank_complete = False
 
         # Reset virtual battery aggregation each cycle to avoid stale data
         if self.virtual_battery is not None:
@@ -154,6 +182,10 @@ class MultiBatteryManager:
             try:
                 data = self._read_single_battery(battery)
                 if data:
+                    health = self._health[battery.name]
+                    health['last_success_monotonic'] = time.monotonic()
+                    health['last_success'] = datetime.now(timezone.utc).isoformat()
+                    health['consecutive_errors'] = 0
                     results[battery.name] = data
                     successful_reads += 1
                     
@@ -174,10 +206,12 @@ class MultiBatteryManager:
                         self.virtual_battery.add_battery_data(battery.name, data)
                 else:
                     failed_reads += 1
+                    self._record_failure(battery.name)
                     logger.warning(f"❌ No data received from {battery.name}")
                     
             except Exception as e:
                 failed_reads += 1
+                self._record_failure(battery.name)
                 logger.error(f"❌ Error reading {battery.name}: {e}")
                 continue
         
@@ -189,7 +223,35 @@ class MultiBatteryManager:
         logger.info("🔋 ===========================")
         
         return results
-    
+
+    def _record_failure(self, name):
+        health = self._health[name]
+        health['error_count'] += 1
+        health['consecutive_errors'] += 1
+        key = f"{self._base_device_id}_{name.lower().replace(' ', '_')}"
+        self._energy_tracker.mark_gap(key)
+
+    def get_diagnostics(self):
+        now = time.monotonic()
+        diagnostics = {}
+        for name, health in self._health.items():
+            last = health['last_success_monotonic']
+            age = max(0.0, now - last) if last is not None else None
+            diagnostics[name] = {k: v for k, v in health.items() if k != 'last_success_monotonic'}
+            diagnostics[name].update(data_age_seconds=age, available=age is not None and age < self.stale_timeout)
+        if self.virtual_battery:
+            last = self._bank_last_success_monotonic
+            diagnostics['_virtual_battery'] = {
+                'available': self._bank_complete and all(d['available'] for d in diagnostics.values()),
+                'last_success': self._bank_last_success,
+                'data_age_seconds': max(0.0, now - last) if last is not None else None,
+                'error_count': self._bank_errors,
+                'consecutive_errors': self._bank_consecutive_errors,
+                'expected_battery_count': len(self._health),
+                'successful_battery_count': len(self.virtual_battery.batteries_data),
+            }
+        return diagnostics
+
     def _read_single_battery(self, battery: BatteryConfig) -> Optional[Dict[str, Any]]:
         """Read data from a single battery"""
         try:
@@ -201,25 +263,13 @@ class MultiBatteryManager:
             )
             
             if device_info and len(device_info) >= 3:
-                # Convert bytes to clean hex payload: between '~' and first '\r'
-                if isinstance(device_info, bytes):
-                    resp = device_info
-                    start = resp.find(b'~')
-                    if start == -1:
-                        start = 0
-                    end = resp.find(b'\r', start + 1)
-                    if end == -1:
-                        end = len(resp)
-                    payload = resp[start + 1:end] if start < end else resp[:end]
-                    ascii_hex = payload.decode('ascii', errors='ignore')
-                    # keep only hex digits
-                    hex_data = ''.join(ch for ch in ascii_hex if ch in '0123456789abcdefABCDEF').upper()
-                else:
-                    # assume already hex string
-                    hex_data = str(device_info)
-                    
+                if not isinstance(device_info, bytes) or not device_info.startswith(b'~') or not device_info.endswith(b'\r'):
+                    raise ValueError("Invalid BMS frame boundaries")
+                hex_data = device_info[1:-1].decode('ascii')
                 parsed_data = self.parser.parse_service_42_response(hex_data)
-                
+                if int(parsed_data['adr_hex'], 16) != battery.address:
+                    raise ValueError("Response belongs to a different BMS address")
+
                 # Add battery identification
                 parsed_data['battery_name'] = battery.name
                 parsed_data['battery_address'] = battery.address
@@ -239,7 +289,11 @@ class MultiBatteryManager:
     
     def get_virtual_battery_data(self) -> Optional[Dict[str, Any]]:
         """Get aggregated virtual battery data with detailed logging"""
-        if not self.virtual_battery:
+        if not self.virtual_battery or not self._health:
+            return None
+        if set(self.virtual_battery.batteries_data) != set(self._health):
+            return None
+        if not all(d['available'] for name, d in self.get_diagnostics().items() if name != '_virtual_battery'):
             return None
             
         aggregated = self.virtual_battery.get_aggregated_data()
@@ -247,19 +301,12 @@ class MultiBatteryManager:
             aggregated['device_name'] = self.virtual_battery.name
             aggregated['is_virtual'] = True
 
-            # Sum per-battery energy counters to avoid topology assumptions
-            try:
-                e_in = 0.0
-                e_out = 0.0
-                for bname, bdata in self.virtual_battery.batteries_data.items():
-                    e_in += float(bdata.get('energy_in_kwh', 0.0))
-                    e_out += float(bdata.get('energy_out_kwh', 0.0))
-                aggregated['energy_in_kwh'] = e_in
-                aggregated['energy_out_kwh'] = e_out
-            except Exception:
-                aggregated['energy_in_kwh'] = aggregated.get('energy_in_kwh', 0.0)
-                aggregated['energy_out_kwh'] = aggregated.get('energy_out_kwh', 0.0)
-            
+            # Missing counters are unknown, never a reset to zero.
+            for key in ('energy_in_kwh', 'energy_out_kwh'):
+                values = [d.get(key) for d in self.virtual_battery.batteries_data.values()]
+                if all(isinstance(v, (int, float)) and math.isfinite(v) and v >= 0 for v in values):
+                    aggregated[key] = sum(values)
+
             # Log virtual battery summary
             logger.info(f"🏦 Virtual Battery '{self.virtual_battery.name}':")
             logger.info(f"   📊 Aggregated from {aggregated.get('battery_count', 0)} batteries")
@@ -279,6 +326,13 @@ class MultiBatteryManager:
             virtual_data = self.get_virtual_battery_data()
             if virtual_data:
                 battery_data['_virtual_battery'] = virtual_data
+                self._bank_complete = True
+                self._bank_last_success = datetime.now(timezone.utc).isoformat()
+                self._bank_last_success_monotonic = time.monotonic()
+                self._bank_consecutive_errors = 0
+            else:
+                self._bank_errors += 1
+                self._bank_consecutive_errors += 1
         
         return battery_data
     
@@ -325,7 +379,8 @@ class MultiBatteryManager:
         elif 'mos_temp_c' in data:
             temperature = data['mos_temp_c']
         
-        data['temperature_1_c'] = temperature if temperature is not None else 20.0
+        if temperature is not None:
+            data['temperature_1_c'] = temperature
         
         # Map capacity fields to match MQTT expectations
         if 'full_charge_capacity_ah' in data:
@@ -358,8 +413,7 @@ class MultiBatteryManager:
             data['energy_out_kwh'] = e_out
         except Exception:
             # Do not fail if persistence/integration has issues
-            data.setdefault('energy_in_kwh', 0.0)
-            data.setdefault('energy_out_kwh', 0.0)
+            logger.warning('Energy counters unavailable; skipping energy publication')
         
         # Debug logging for troubleshooting
         logger.debug(f"📋 Enhanced data for {battery_name}:")

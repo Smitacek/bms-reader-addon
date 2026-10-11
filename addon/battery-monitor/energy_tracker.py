@@ -37,6 +37,9 @@ class EnergyTracker:
         self._state: Dict[str, Dict[str, float]] = {}
         self._lock = RLock()
         self._load()
+        # Persist totals, but never integrate across process downtime.
+        for entry in self._state.values():
+            entry['last_ts'] = 0.0
 
     def _resolve_storage_path(self, explicit: str | None) -> str:
         if explicit:
@@ -86,9 +89,17 @@ class EnergyTracker:
             }
             self._save()
 
+    def mark_gap(self, device_id: str) -> None:
+        """Break integration continuity after a missed sample, preserving totals."""
+        with self._lock:
+            if device_id in self._state:
+                self._state[device_id]['last_ts'] = 0.0
+
     def _ensure_device(self, device_id: str) -> None:
         if device_id not in self._state:
-            self.reset(device_id)
+            self._state[device_id] = {
+                'energy_in_kwh': 0.0, 'energy_out_kwh': 0.0, 'last_ts': 0.0
+            }
 
     def update(self, device_id: str, power_w: float, now_ts: float | None = None) -> Tuple[float, float]:
         """Update counters for a device based on current power in watts.

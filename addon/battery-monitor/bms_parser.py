@@ -5,6 +5,7 @@ BMS Parser pro Daren BMS Service 42 response
 """
 
 import json
+import string
 
 
 class BMSParser:
@@ -39,6 +40,21 @@ class BMSParser:
         if not isinstance(hex_data_string, str):
             raise TypeError("Vstup musí být hex string")
 
+        if len(hex_data_string) < 16 or any(c not in string.hexdigits for c in hex_data_string):
+            raise ValueError("Invalid ASCII hex frame")
+        if hex_data_string[:2].upper() != '22' or hex_data_string[4:6].upper() != '4A':
+            raise ValueError("Unexpected protocol version or device class")
+        length = int(hex_data_string[8:12], 16)
+        info_length = length & 0xFFF
+        expected_nibble = (-(sum((info_length >> shift) & 0xF for shift in (0, 4, 8)))) & 0xF
+        if length >> 12 != expected_nibble or info_length % 2:
+            raise ValueError("Invalid INFO length checksum")
+        if len(hex_data_string) != 16 + info_length:
+            raise ValueError("Frame length mismatch")
+        if ((sum(hex_data_string[:-4].encode('ascii')) + int(hex_data_string[-4:], 16)) & 0xFFFF) != 0:
+            raise ValueError("Frame checksum mismatch")
+        if int(hex_data_string[6:8], 16) != 0:
+            raise ValueError(f"BMS returned error code {hex_data_string[6:8]}")
         data = {}
         ptr = 0
 
@@ -187,6 +203,8 @@ class BMSParser:
                 f"read {info_ptr} characters."
             )
 
+        if not 0 <= data['soc_percent'] <= 100 or not 1 <= cell_count <= 32:
+            raise ValueError("Invalid SoC or cell count")
         return data
 
 

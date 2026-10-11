@@ -1,6 +1,6 @@
 # Battery Monitor Add-on - Multi-Battery Support
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 
 Advanced monitoring add-on for Daren BMS batteries with **multi-battery support** and virtual battery aggregation.
@@ -50,7 +50,7 @@ Advanced monitoring add-on for Daren BMS batteries with **multi-battery support*
 - **Status** - Charge/discharge/idle
 
 ### Virtual Battery (Aggregated)
-- **Average SOC** - Average across all batteries
+- **State of charge** - Full-bank capacity-weighted reported SoC
 - **Average Pack Voltage** - Mean of per-battery pack voltages (topology-agnostic)
 - **Pack Voltage Range** - Min/Max pack voltage across batteries and their difference
 - **Energy In Total** - kWh (sum of per-battery cumulative charging)
@@ -133,7 +133,7 @@ sensor.battery_1_temperature
 ### Virtual Battery Sensors
 The virtual battery avoids topology-dependent totals and exposes:
 ```
-sensor.battery_bank_soc                 # Average SOC
+sensor.battery_bank_soc                 # Capacity-weighted SoC
 sensor.battery_bank_avg_pack_voltage    # Average of pack voltages
 sensor.battery_bank_pack_voltage_min    # Minimum pack voltage
 sensor.battery_bank_pack_voltage_max    # Maximum pack voltage
@@ -221,3 +221,7 @@ See `MULTI_BATTERY_CONFIG.md` for detailed configuration examples and troublesho
 ---
 
 **Perfect for large battery systems and professional monitoring setups!** 🔋⚡
+
+## 1.2.3 sensor semantics and availability
+
+See [SENSOR_SEMANTICS.md](SENSOR_SEMANTICS.md) for units/classes, SoC weighting, stale_timeout, energy persistence and migration checks. Home Assistant Core 2025.10 or newer is required.

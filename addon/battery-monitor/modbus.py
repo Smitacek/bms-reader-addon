@@ -21,7 +21,11 @@ def request_device_info(
     Response: ASCII hex data ending with '\r'
     """
     # Build ASCII frame exactly according to README-2.md
-    frame = f"~22{address:02X}4A42E002{address:02X}FD28\r".encode('ascii')
+    if not 1 <= address <= 255 or timeout <= 0:
+        raise ValueError("Invalid BMS address or timeout")
+    body = f"22{address:02X}4A42E002{address:02X}"
+    checksum = (-sum(body.encode('ascii'))) & 0xFFFF
+    frame = f"~{body}{checksum:04X}\r".encode('ascii')
     
     logger.debug(f"📤 Sending: {frame}")
     
@@ -48,11 +52,24 @@ def request_device_info(
         
         # Read response - BMS responds with ASCII hex data ending with '\r'
         # Important: Do NOT append bytes after the first CR as it corrupts framing
-        response = ser.read_until(expected=b'\r')
-
-        logger.debug(f"📨 Received ({len(response)} bytes): {response}")
-
-        return response
+        deadline = time.monotonic() + timeout
+        # One overall deadline, including noise and converter request echoes.
+        while time.monotonic() < deadline:
+            ser.timeout = max(0.001, deadline - time.monotonic())
+            response = ser.read_until(expected=b'\r', size=4114)
+            if not response:
+                return b''
+            start = response.rfind(b'~')
+            if start < 0:
+                continue
+            response = response[start:]
+            if not response.endswith(b'\r') or len(response) > 4112:
+                raise ValueError("Incomplete or oversized BMS frame")
+            if response == frame:
+                continue
+            logger.debug(f"📨 Received ({len(response)} bytes): {response}")
+            return response
+        return b''
 
 
 def compute_crc16(data: bytes) -> int:

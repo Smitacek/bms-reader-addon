@@ -28,5 +28,5 @@ COPY energy_tracker.py .
 COPY run.sh /
 RUN chmod a+x /run.sh
 
-# Direct execution without S6
-CMD ["python3", "/app/main.py"]
+# Bootstrap Supervisor MQTT service credentials, then exec Python.
+CMD ["/run.sh"]

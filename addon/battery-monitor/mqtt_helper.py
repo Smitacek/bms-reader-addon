@@ -7,6 +7,7 @@ Enhanced MQTT Helper for Multi-Battery Home Assistant Auto Discovery
 import json
 import logging
 import time
+import math
 from typing import Dict, Any, List
 import paho.mqtt.client as mqtt
 
@@ -30,6 +31,8 @@ class MultiBatteryMQTTPublisher:
         self.connected = False
         self._loop_running = False
         self._last_reconnect_attempt = 0.0
+        self._discovery_pending = True
+        self._battery_names = [b.name for b in self.config.get_enabled_batteries()]
 
         # Configure exponential backoff for reconnects when supported
         try:
@@ -48,8 +51,11 @@ class MultiBatteryMQTTPublisher:
         """Callback for MQTT connection"""
         if rc == 0:
             self.connected = True
+            self._discovery_pending = True
             logger.info(f"✅ Connected to MQTT broker {self.config.mqtt_host}:{self.config.mqtt_port}")
-            # Publish availability online
+            for name in self._battery_names + (['_virtual_battery'] if self.config.enable_virtual_battery else []):
+                self._publish(f'bms/{self._device_id(name)}/availability', 'offline', qos=1, retain=True)
+            # Publish process availability online
             try:
                 self.client.publish(self._availability_topic, payload="online", qos=1, retain=True)
             except Exception as e:
@@ -63,7 +69,7 @@ class MultiBatteryMQTTPublisher:
         self.connected = False
         if rc != 0:
             logger.warning("📡 Unexpected MQTT disconnect; attempting reconnect...")
-            self._attempt_reconnect()
+            # Paho loop handles reconnect; main loop also retries initial failures.
         else:
             logger.info("📡 Disconnected from MQTT broker")
     
@@ -168,13 +174,24 @@ class MultiBatteryMQTTPublisher:
                 success_count += 1
         
         # Discovery for virtual battery (if enabled)
-        if self.config.enable_virtual_battery and len(battery_names) > 1:
+        if self.config.enable_virtual_battery:
             if self._publish_battery_discovery("_virtual_battery", is_virtual=True):
                 success_count += 1
         
         logger.info(f"📤 Auto Discovery published for {success_count} batteries")
-        return success_count > 0
-    
+        expected_count = len(battery_names) + int(self.config.enable_virtual_battery)
+        self._discovery_pending = success_count != expected_count
+        return not self._discovery_pending
+
+    def _device_id(self, battery_name):
+        if battery_name == '_virtual_battery':
+            return f"{self.config.device_id}_virtual"
+        return f"{self.config.device_id}_{battery_name.lower().replace(' ', '_')}"
+
+    def _publish(self, topic, payload, **kwargs):
+        result = self.client.publish(topic, payload, **kwargs)
+        return result.rc == mqtt.MQTT_ERR_SUCCESS
+
     def _publish_battery_discovery(self, battery_name: str, is_virtual: bool = False) -> bool:
         """Publishes discovery config for one battery"""
         try:
@@ -187,7 +204,7 @@ class MultiBatteryMQTTPublisher:
                 device_id = f"{self.config.device_id}_{battery_name.lower().replace(' ', '_')}"
             
             # Sensor definitions
-            sensors = self._get_sensor_definitions(is_virtual)
+            sensors = self._get_sensor_definitions(is_virtual) + self._diagnostic_sensor_definitions(is_virtual)
             
             # Publish discovery for each sensor
             for sensor in sensors:
@@ -195,21 +212,21 @@ class MultiBatteryMQTTPublisher:
                 state_topic = f"bms/{device_id}/{sensor['object_id']}"
                 
                 config = {
-                    "name": f"{device_name} {sensor['name']}",
+                    "name": sensor['name'],
                     "unique_id": f"{device_id}_{sensor['object_id']}",
-                    "object_id": f"{device_id}_{sensor['object_id']}",
+                    "default_entity_id": f"sensor.{device_id}_{sensor['object_id']}",
                     "state_topic": state_topic,
                     "device": {
                         "identifiers": [device_id],
                         "name": device_name,
                         "manufacturer": self.config.manufacturer,
                         "model": self.config.model + (" Virtual" if is_virtual else ""),
-                        "sw_version": "1.2.2"
+                        "sw_version": "1.2.3"
                     }
                 }
                 
                 # Add optional attributes
-                for attr in ['unit_of_measurement', 'device_class', 'state_class', 'icon']:
+                for attr in ['unit_of_measurement', 'device_class', 'state_class', 'icon', 'entity_category']:
                     if attr in sensor:
                         config[attr] = sensor[attr]
                 # Hint UI to use 3 decimals for voltage
@@ -225,9 +242,18 @@ class MultiBatteryMQTTPublisher:
                     "payload_available": "online",
                     "payload_not_available": "offline"
                 }]
-
-                # Publish
-                self.client.publish(discovery_topic, json.dumps(config), retain=True)
+                if sensor.get('entity_category') != 'diagnostic':
+                    config['availability'].append({
+                        'topic': f'bms/{device_id}/availability',
+                        'payload_available': 'online', 'payload_not_available': 'offline'
+                    })
+                config['availability_mode'] = 'all'
+                config['expire_after'] = self.config.stale_timeout
+                config['qos'] = 1
+                # Old per-device retained statuses must not make fresh discovery online.
+                # States remain non-retained: HA expiry survives broker/HA reloads.
+                if not self._publish(discovery_topic, json.dumps(config), qos=1, retain=True):
+                    return False
                 logger.debug(f"Published discovery for {device_name} {sensor['name']}")
             
             return True
@@ -236,6 +262,22 @@ class MultiBatteryMQTTPublisher:
             logger.error(f"❌ Error publishing discovery for {battery_name}: {e}")
             return False
     
+    def _diagnostic_sensor_definitions(self, is_virtual=False):
+        sensors = [
+            {'name': 'Last successful read', 'object_id': 'last_success', 'device_class': 'timestamp'},
+            {'name': 'Data age', 'object_id': 'data_age', 'device_class': 'duration', 'unit_of_measurement': 's'},
+            {'name': 'Read errors since startup', 'object_id': 'error_count'},
+            {'name': 'Consecutive read errors', 'object_id': 'consecutive_errors'},
+        ]
+        if is_virtual:
+            sensors += [
+                {'name': 'Expected batteries', 'object_id': 'expected_battery_count'},
+                {'name': 'Successfully read batteries', 'object_id': 'successful_battery_count'},
+            ]
+        for sensor in sensors:
+            sensor['entity_category'] = 'diagnostic'
+        return sensors
+
     def _get_sensor_definitions(self, is_virtual: bool = False) -> List[Dict]:
         """Returns sensor definitions for battery.
 
@@ -244,7 +286,7 @@ class MultiBatteryMQTTPublisher:
         if is_virtual:
             return [
                 {
-                    "name": "SOC",
+                    "name": "State of charge",
                     "object_id": "soc",
                     "unit_of_measurement": "%",
                     "device_class": "battery",
@@ -284,7 +326,7 @@ class MultiBatteryMQTTPublisher:
                     "icon": "mdi:arrow-expand-horizontal"
                 },
                 {
-                    "name": "Temperature",
+                    "name": "Mean ambient temperature" if is_virtual else "Ambient temperature",
                     "object_id": "temperature",
                     "unit_of_measurement": "°C",
                     "device_class": "temperature",
@@ -297,7 +339,7 @@ class MultiBatteryMQTTPublisher:
                     "icon": "mdi:information"
                 },
                 {
-                    "name": "Energy In Total",
+                    "name": "Charging energy total",
                     "object_id": "energy_in_total",
                     "unit_of_measurement": "kWh",
                     "device_class": "energy",
@@ -305,7 +347,7 @@ class MultiBatteryMQTTPublisher:
                     "icon": "mdi:battery-arrow-down"
                 },
                 {
-                    "name": "Energy Out Total",
+                    "name": "Discharging energy total",
                     "object_id": "energy_out_total",
                     "unit_of_measurement": "kWh",
                     "device_class": "energy",
@@ -319,7 +361,8 @@ class MultiBatteryMQTTPublisher:
                     "icon": "mdi:counter"
                 },
                 {
-                    "name": "Connected Batteries",
+                    "name": "Contributing batteries",
+                    "entity_category": "diagnostic",
                     "object_id": "connected_batteries",
                     "icon": "mdi:battery-outline"
                 },
@@ -328,7 +371,7 @@ class MultiBatteryMQTTPublisher:
         # Non-virtual battery sensors
         base_sensors = [
             {
-                "name": "SOC",
+                "name": "State of charge",
                 "object_id": "soc",
                 "unit_of_measurement": "%",
                 "device_class": "battery",
@@ -352,7 +395,7 @@ class MultiBatteryMQTTPublisher:
                 "icon": "mdi:current-dc"
             },
             {
-                "name": "Power",
+                "name": "Battery power",
                 "object_id": "power",
                 "unit_of_measurement": "W",
                 "device_class": "power",
@@ -360,14 +403,14 @@ class MultiBatteryMQTTPublisher:
                 "icon": "mdi:flash"
             },
             {
-                "name": "Remaining Capacity",
+                "name": "Remaining capacity",
                 "object_id": "remaining_capacity",
                 "unit_of_measurement": "Ah",
                 "state_class": "measurement",
                 "icon": "mdi:battery-charging"
             },
             {
-                "name": "Temperature",
+                "name": "Mean ambient temperature" if is_virtual else "Ambient temperature",
                 "object_id": "temperature",
                 "unit_of_measurement": "°C",
                 "device_class": "temperature",
@@ -399,12 +442,12 @@ class MultiBatteryMQTTPublisher:
                 "icon": "mdi:battery-alert"
             },
             {
-                "name": "Status",
+                "name": "Operating status",
                 "object_id": "status",
                 "icon": "mdi:information"
             },
             {
-                "name": "Energy In Total",
+                "name": "Charging energy total",
                 "object_id": "energy_in_total",
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
@@ -412,7 +455,7 @@ class MultiBatteryMQTTPublisher:
                 "icon": "mdi:battery-arrow-down"
             },
             {
-                "name": "Energy Out Total",
+                "name": "Discharging energy total",
                 "object_id": "energy_out_total",
                 "unit_of_measurement": "kWh",
                 "device_class": "energy",
@@ -421,6 +464,10 @@ class MultiBatteryMQTTPublisher:
             }
         ]
         
+        base_sensors.append({
+            'name': 'Full charge capacity', 'object_id': 'full_charge_capacity',
+            'unit_of_measurement': 'Ah', 'state_class': 'measurement', 'icon': 'mdi:battery'
+        })
         return base_sensors
     
     def publish_battery_data(self, battery_name: str, data: Dict[str, Any], is_virtual: bool = False) -> bool:
@@ -445,6 +492,7 @@ class MultiBatteryMQTTPublisher:
                 'pack_current': 'pack_current_a',
                 'power': 'power_w',
                 'remaining_capacity': 'remaining_capacity_ah',
+                'full_charge_capacity': 'full_charge_capacity_ah',
                 'temperature': 'temperature_1_c',
                 'min_cell_voltage': 'min_cell_voltage_v',
                 'max_cell_voltage': 'max_cell_voltage_v',
@@ -458,7 +506,7 @@ class MultiBatteryMQTTPublisher:
             # Add special mappings for virtual battery
             if is_virtual:
                 # Remove topology-dependent mappings for virtual battery
-                for k in ['pack_voltage', 'pack_current', 'power', 'remaining_capacity']:
+                for k in ['pack_voltage', 'pack_current', 'power', 'remaining_capacity', 'full_charge_capacity']:
                     sensor_mappings.pop(k, None)
                 sensor_mappings.update({
                     'avg_pack_voltage': 'avg_pack_voltage_v',
@@ -474,6 +522,8 @@ class MultiBatteryMQTTPublisher:
                 if data_key in data:
                     topic = f"bms/{device_id}/{sensor_id}"
                     value = data[data_key]
+                    if value is None or (isinstance(value, float) and not math.isfinite(value)):
+                        continue
                     
                     # Special handling for some data types
                     if isinstance(value, list):
@@ -481,7 +531,8 @@ class MultiBatteryMQTTPublisher:
                     elif isinstance(value, float):
                         value = round(value, 3)
                     
-                    self.client.publish(topic, str(value))
+                    if not self._publish(topic, str(value), qos=1):
+                        return False
                     published_count += 1
             
             logger.debug(f"📤 Published {published_count} sensors for {battery_name}")
@@ -491,21 +542,35 @@ class MultiBatteryMQTTPublisher:
             logger.error(f"❌ Error publishing data for {battery_name}: {e}")
             return False
     
-    def publish_all_battery_data(self, all_data: Dict[str, Dict[str, Any]]) -> bool:
-        """Publishes data for all batteries"""
+    def publish_all_battery_data(self, all_data, diagnostics=None):
+        """Publish health every cycle, measurements only for successful reads."""
         if not self.connected and not self.ensure_connected(timeout=3):
-            logger.error("❌ Not connected to MQTT - cannot publish data")
             return False
-        
-        success_count = 0
-        
-        for battery_name, data in all_data.items():
-            is_virtual = battery_name == "_virtual_battery"
-            if self.publish_battery_data(battery_name, data, is_virtual):
-                success_count += 1
-        
-        logger.info(f"📤 Published data for {success_count}/{len(all_data)} batteries")
-        return success_count > 0
+        if self._discovery_pending:
+            if not self.publish_multi_battery_discovery(self._battery_names):
+                return False
+        if diagnostics is None:
+            diagnostics = {name: {'available': name in all_data} for name in self._battery_names}
+            if self.config.enable_virtual_battery:
+                diagnostics['_virtual_battery'] = {'available': '_virtual_battery' in all_data}
+        success = True
+        # Mark unavailable first so partial reads cannot expose a partial bank.
+        for name, health in diagnostics.items():
+            if not health.get('available'):
+                success = self._publish(f'bms/{self._device_id(name)}/availability', 'offline', qos=1, retain=True) and success
+        for name, data in all_data.items():
+            published = self.publish_battery_data(name, data, name == '_virtual_battery')
+            success = published and success
+            if published and diagnostics.get(name, {}).get('available'):
+                success = self._publish(f'bms/{self._device_id(name)}/availability', 'online', qos=1, retain=True) and success
+        for name, health in diagnostics.items():
+            for sensor in self._diagnostic_sensor_definitions(name == '_virtual_battery'):
+                key = 'data_age_seconds' if sensor['object_id'] == 'data_age' else sensor['object_id']
+                value = health.get(key)
+                # Never turn unknown age/timestamp into zero.
+                if value is not None:
+                    success = self._publish(f"bms/{self._device_id(name)}/{sensor['object_id']}", str(value), qos=1) and success
+        return success
 
 
 # Backward compatibility alias

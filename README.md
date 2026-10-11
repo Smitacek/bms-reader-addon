@@ -1,12 +1,12 @@
 # BMS Reader Add-on for Home Assistant
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.3-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2023.1+-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 🔋 **Advanced multi-battery monitoring** for Daren BMS LiFePO4 batteries with **virtual battery aggregation** and **Home Assistant Auto Discovery**.
 
-## 🆕 Latest: Battery Monitor Multi v1.2.2
+## 🆕 Latest: Battery Monitor Multi v1.2.3
 
 Production-ready multi-battery monitoring with improved MQTT reliability and reduced logging noise.
 
@@ -128,13 +128,11 @@ On Raspberry Pi and USB adapters, `/dev/ttyUSB0` can change after reboots or re-
 - **Protection Status** - Over/under voltage, current, temperature
 
 #### Virtual Battery (Aggregated from All Batteries)
-- **Average SOC** - Weighted average across all batteries
-- **Total Voltage** - Sum of all battery voltages
-- **Total Current** - Sum of all battery currents  
-- **Total Power** - Combined power output
+- **State of charge** - Full-bank capacity-weighted reported SoC
+- **Pack voltage statistics** - Mean/minimum/maximum/difference, without topology assumptions
 - **Energy In Total** - kWh (cumulative charging into bank)
 - **Energy Out Total** - kWh (cumulative discharging from bank)
-- **Total Capacity** - Sum of remaining capacity
+- No bank current, total voltage, power or Ah capacity without a known topology.
 - **Battery Count** - Number of connected batteries
 
 ### Hardware Requirements
@@ -173,7 +171,7 @@ sensor.battery_1_temperature
 
 #### Virtual Battery Sensors (system overview)
 ```
-sensor.battery_bank_soc                 # Average SOC
+sensor.battery_bank_soc                 # Capacity-weighted SoC
 sensor.battery_bank_avg_pack_voltage    # Average of pack voltages
 sensor.battery_bank_pack_voltage_min    # Minimum pack voltage
 sensor.battery_bank_pack_voltage_max    # Maximum pack voltage
@@ -280,3 +278,7 @@ This project is licensed under the MIT License.
 ---
 
 **Perfect for monitoring large battery systems, solar installations, and professional setups with multiple batteries!** 🔋⚡
+
+## 1.2.3 sensor semantics and availability
+
+See [SENSOR_SEMANTICS.md](addon/battery-monitor/SENSOR_SEMANTICS.md) for units/classes, SoC weighting, stale_timeout, energy persistence and migration checks. Home Assistant Core 2025.10 or newer is required.

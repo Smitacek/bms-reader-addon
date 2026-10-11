@@ -111,7 +111,7 @@ For each battery, sensors will be created:
 - ... (for each battery)
 
 ### Virtual battery (aggregated values)
-- `sensor.battery_bank_soc` - Average SOC of all batteries
+- `sensor.battery_bank_soc` - Capacity-weighted SoC of the complete bank
 - `sensor.battery_bank_pack_voltage` - Total voltage (sum)
 - `sensor.battery_bank_pack_current` - Total current (sum)
 - `sensor.battery_bank_power` - Total power

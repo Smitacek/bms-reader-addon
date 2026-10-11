@@ -45,7 +45,7 @@ def main():
     """Main function with enhanced multi-battery support and logging"""
     # Ensure we see early logs before config is loaded
     setup_logging("INFO")
-    logging.info("🔋 Battery Monitor Add-on - Multi-Battery Version 1.2.2")
+    logging.info("🔋 Battery Monitor Add-on - Multi-Battery Version 1.2.3")
     logging.info("🚀 Starting initialization...")
     
     # Load configuration
@@ -62,7 +62,7 @@ def main():
     
     # Enhanced startup logging
     logging.info("🔋 ======== BATTERY MONITOR STARTUP ========")
-    logging.info("📊 Battery Monitor Multi v1.2.2")
+    logging.info("📊 Battery Monitor Multi v1.2.3")
     logging.info(f"🕐 Started at: {time.strftime('%Y-%m-%d %H:%M:%S')}")
     logging.info(f"📝 Log level: {config.log_level}")
     
@@ -115,7 +115,7 @@ def main():
         # MQTT connection attempt with detailed logging
         logging.info(f"🔌 Connecting to MQTT broker: {config.mqtt_host}:{config.mqtt_port}")
         if config.mqtt_username:
-            logging.info(f"👤 Using authentication for user: {config.mqtt_username}")
+            logging.info("👤 Using MQTT authentication")
         else:
             logging.info("🔓 Connecting without authentication")
             
@@ -163,8 +163,7 @@ def main():
                     if battery_name == "_virtual_battery":
                         logging.info(f"🏦 Virtual Battery: "
                                    f"SOC {data.get('soc_percent', 0):.1f}%, "
-                                   f"Voltage {data.get('pack_voltage_v', 0):.2f}V, "
-                                   f"Current {data.get('pack_current_a', 0):.2f}A, "
+                                   f"Mean pack voltage {data.get('avg_pack_voltage_v', 0):.2f}V, "
                                    f"Batteries: {data.get('battery_count', 0)}")
                     else:
                         logging.info(f"🔋 {battery_name}: "
@@ -173,9 +172,9 @@ def main():
                                    f"Current {data.get('pack_current_a', 0):.2f}A")
                 
                 # Publishing to MQTT (only if connected)
-                if mqtt_connected and mqtt:
+                if mqtt:
                     try:
-                        if mqtt.publish_all_battery_data(all_data):
+                        if mqtt.publish_all_battery_data(all_data, battery_manager.get_diagnostics()):
                             logging.info("📤 Data from all batteries published to MQTT")
                         else:
                             logging.warning("⚠️ Failed to publish to MQTT")
@@ -190,6 +189,8 @@ def main():
                 
             else:
                 logging.warning("❌ No data loaded from batteries")
+                if mqtt:
+                    mqtt.publish_all_battery_data({}, battery_manager.get_diagnostics())
             
             # Wait for next iteration
             time.sleep(config.read_interval)

@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.3] - 2026-10-11
+### Fixed
+- Never publish a partial bank as a complete bank after a failed pack read; use capacity-weighted SoC from all enabled packs.
+- Strict frame/INFO-length checksums, return code and response identity checks; calculate request checksums for each address and bound noise/echo handling.
+- MQTT retry after failed initial connection, discovery replay on reconnect and publish queue error checks.
+- Run Supervisor MQTT bootstrap at container startup; declare optional MQTT service.
+- Do not integrate energy across failed reads or process downtime, or publish missing energy as zero.
+### Added
+- Per-device availability, 60-second default stale timeout, state expiry and last-success/age/error diagnostic entities.
+- Full charge capacity sensor and documented HA names, units, statistics semantics and migration.
+### Changed
+- Entity-only friendly names; default_entity_id replaces obsolete discovery object_id; minimum HA Core 2025.10.0.
+- Pin Paho to supported 1.x callback API.
+- Physical/bank identities and topics remain stable.
+
+
 ## [1.2.0] - 2025-10-31
 ### Added
 - MQTT auto-credentials via Home Assistant Supervisor discovery (Mosquitto add-on). The add-on now automatically uses discovered `host/port/username/password` when available.

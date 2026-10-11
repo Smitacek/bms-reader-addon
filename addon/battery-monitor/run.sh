@@ -9,11 +9,7 @@ if [ "${1:-}" = "diag" ] || [ "${1:-}" = "diagnostics" ]; then
     exec python3 diagnostics.py
 fi
 
-# Wait for MQTT service (when available in Supervisor)
-if command -v bashio::services.wait &> /dev/null; then
-    bashio::log.info "⏳ Čekám na MQTT službu (Supervisor Discovery)..."
-    bashio::services.wait "mqtt" || true
-fi
+# MQTT is optional: do not wait indefinitely for an unavailable service.
 
 # Auto-discover MQTT credentials from Supervisor and export as env vars.
 # Manual options in /data/options.json still override in Python if set.

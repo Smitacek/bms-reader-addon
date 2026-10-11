@@ -1,5 +1,5 @@
 name: "Battery Monitor Multi"
-version: "1.2.2"
+version: "1.2.3"
 slug: "battery-monitor-v2"
 description: "BMS Reader for LiFePO4 batteries with MQTT integration - Multi-battery support, English interface"
 arch:
@@ -10,9 +10,11 @@ init: false
 startup: application
 boot: manual
 stage: stable
-homeassistant: "2023.1.0"
+homeassistant: "2025.10.0"
 url: "https://github.com/Smitacek/bms-reader-addon"
 apparmor: true
+services:
+  - mqtt:want
 options:
   # Single battery mode (backward compatibility)
   bms_port: "/dev/ttyUSB0"
@@ -34,6 +36,7 @@ options:
   mqtt_username: ""
   mqtt_password: ""
   read_interval: 30
+  stale_timeout: 60
   # Logging
   log_level: warning
   # One-off discovery tool
@@ -66,6 +69,7 @@ schema:
   mqtt_username: str?
   mqtt_password: password?
   read_interval: int(10,300)
+  stale_timeout: int(10,3600)?
   log_level: list(debug|info|warning|error|critical)?
   discovery_mode: bool?
   discovery_address_from: int(1,255)?

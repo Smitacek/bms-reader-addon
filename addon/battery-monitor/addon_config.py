@@ -89,6 +89,7 @@ class Config:
         
         # Application Configuration
         self.read_interval = int(options.get('read_interval', os.getenv('READ_INTERVAL', '30')))
+        self.stale_timeout = max(int(options.get('stale_timeout', 60)), self.read_interval + 5 * len(self.get_enabled_batteries()))
         # Default to WARNING to reduce log verbosity; allow override via option or env
         self.log_level = str(options.get('log_level', os.getenv('LOG_LEVEL', 'WARNING'))).upper()
 
